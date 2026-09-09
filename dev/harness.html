@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<!-- Development harness. Not shipped.
+     Exercises the real content script against consent banners injected after
+     load, which is how consent platforms actually behave: none of the sites
+     checked (BBC, Guardian, Le Monde, Spiegel, CNET) have any banner markup
+     in their initial HTML, so a MutationObserver is the trigger and a static
+     page could not test it.
+     The banner markup mirrors the DOM shape real platforms produce
+     (OneTrust, Cookiebot, Didomi) with the wording those banners use. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PrivUp extension harness</title>
+<style>
+  body { font: 16px/1.6 system-ui, sans-serif; margin: 0; background: #f6f6f4; color: #16181c; }
+  main { max-width: 46rem; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
+  h1 { letter-spacing: -0.02em; }
+  .controls { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.25rem 0 2rem; }
+  .controls button {
+    border: 1px solid #d8d8d4; background: #fff; border-radius: 999px;
+    padding: .5rem 1rem; font: inherit; font-size: .875rem; cursor: pointer;
+  }
+  .controls button:hover { background: #f0f0ed; }
+  pre { background: #fff; padding: 1rem; border-radius: 12px; overflow-x: auto; font-size: .8125rem; }
+  article { background: #fff; padding: 1.25rem 1.5rem; border-radius: 16px; }
+
+  /* Banner chrome, roughly as the real platforms style it. */
+  #onetrust-banner-sdk, #CybotCookiebotDialog, .didomi-notice-banner {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
+    background: #fff; border-top: 1px solid #ddd; padding: 1.25rem;
+    box-shadow: 0 -6px 24px rgba(0,0,0,.12);
+  }
+  .banner-inner { max-width: 60rem; margin: 0 auto; display: flex; gap: 1rem; align-items: center; }
+  .banner-inner p { margin: 0; font-size: .9375rem; }
+  .banner-actions { display: flex; gap: .5rem; flex: none; }
+  .banner-actions button {
+    border: 0; border-radius: 6px; padding: .6rem 1.1rem; font: inherit;
+    font-size: .875rem; cursor: pointer; background: #1668dc; color: #fff;
+  }
+  .banner-actions button.secondary { background: #eee; color: #333; }
+</style>
+</head>
+<body>
+
+<main>
+  <h1>PrivUp extension harness</h1>
+  <p>Each button injects a consent banner after load, the way a real consent
+     platform does. The content script's <code>MutationObserver</code> should
+     notice it, analyze it, and show the verdict panel.</p>
+
+  <div class="controls">
+    <button data-banner="onetrust">Inject OneTrust-style banner</button>
+    <button data-banner="cookiebot">Inject Cookiebot-style banner</button>
+    <button data-banner="didomi">Inject Didomi-style banner</button>
+    <button data-banner="lender">Inject a lending-app banner</button>
+    <button id="clear">Clear</button>
+  </div>
+
+  <article>
+    <h2>Privacy Policy</h2>
+    <p>We collect your personal data when you register with us, including your
+       name, email address and device identifiers. We may collect your personal
+       information for verification purposes.</p>
+    <h3>How we share your personal data</h3>
+    <p>We work with third-party service providers and other group companies to
+       help us operate, provide and improve our services. We also share limited
+       information with select marketing partners in order to promote our
+       products.</p>
+    <h3>Data retention</h3>
+    <p>We keep some data until you delete your account. We store information for
+       as long as necessary for the purposes identified in this policy.</p>
+    <h3>Advertising</h3>
+    <p>We use automated systems that analyze your content to provide you with
+       personalized ads across other websites and apps. A unique advertising
+       identifier is used to provide relevant advertising.</p>
+    <h3>Training</h3>
+    <p>We may use content you provide us to improve our services, for example to
+       train the models that power our assistant.</p>
+    <p><a href="/privacy-policy">Read our full Privacy Policy</a> or our
+       <a href="/cookie-policy">Cookie Policy</a>.</p>
+  </article>
+</main>
+
+<script type="module">
+const BANNERS = {
+  onetrust: `
+    <div id="onetrust-banner-sdk" role="dialog" aria-label="Cookie banner">
+      <div class="banner-inner">
+        <p>We use cookies and similar technologies to personalise content and ads,
+           to provide social media features and to analyse our traffic. We share
+           information about your use of our site with our advertising and analytics
+           partners, who may combine it with other information you have provided.
+           <a href="/privacy-policy">Privacy Policy</a></p>
+        <div class="banner-actions">
+          <button class="secondary">Manage preferences</button>
+          <button id="onetrust-accept-btn-handler">Accept All Cookies</button>
+        </div>
+      </div>
+    </div>`,
+  cookiebot: `
+    <div id="CybotCookiebotDialog" role="dialog">
+      <div class="banner-inner">
+        <p>This website uses cookies. We use cookies to personalise content, to
+           provide social media features and to analyse our traffic. We may
+           transfer your information to servers located outside of your country.
+           <a href="/cookie-policy">Cookie Policy</a></p>
+        <div class="banner-actions">
+          <button class="secondary">Reject all</button>
+          <button>Allow all</button>
+        </div>
+      </div>
+    </div>`,
+  didomi: `
+    <div class="didomi-notice-banner">
+      <div class="banner-inner">
+        <p>We and our partners store and access personal data such as browsing
+           data or unique identifiers on your device. We use automated systems to
+           build a profile of your interests and show you personalised ads.
+           <a href="/privacy-policy">Learn more</a></p>
+        <div class="banner-actions">
+          <button class="secondary">Manage consent</button>
+          <button>Agree and close</button>
+        </div>
+      </div>
+    </div>`,
+  lender: `
+    <div id="consent-modal" role="dialog">
+      <div class="banner-inner">
+        <p>To process your loan application we request one-time access to your
+           camera for KYC. We also access your contact list and call logs to
+           assess your creditworthiness, and we monitor your SMS to verify your
+           income. Daily charges of up to 0.2% of the overdue principal amount
+           apply. Rate of Interest up to 36% p.a. for every borrower.
+           <a href="/privacy-policy">Privacy Policy</a></p>
+        <div class="banner-actions">
+          <button>I agree and consent</button>
+        </div>
+      </div>
+    </div>`,
+};
+
+function clear() {
+  for (const id of ["onetrust-banner-sdk", "CybotCookiebotDialog", "consent-modal"]) {
+    document.getElementById(id)?.remove();
+  }
+  document.querySelector(".didomi-notice-banner")?.remove();
+  document.getElementById("privup-panel-host")?.remove();
+  // Let the content script arm again for the next injection.
+  window.__privupReset?.();
+}
+
+for (const button of document.querySelectorAll("[data-banner]")) {
+  button.addEventListener("click", () => {
+    clear();
+    // Injected on a delay, exactly as a consent platform does.
+    setTimeout(() => {
+      const holder = document.createElement("div");
+      holder.innerHTML = BANNERS[button.dataset.banner];
+      document.body.append(holder.firstElementChild);
+    }, 120);
+  });
+}
+document.getElementById("clear").addEventListener("click", clear);
+
+// Load the real content script. In Chrome this happens via loader.js; here it
+// is imported directly so the harness needs no extension install.
+await import("../src/content.js");
+</script>
+</body>
+</html>
