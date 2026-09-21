@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "PrivUp",
+  "version": "0.1.0",
+  "description": "Know what you're agreeing to. Reads consent banners and policies on your device and gives a plain Allow, Warning or Deny.",
+  "action": {
+    "default_title": "Analyze this page with PrivUp"
+  },
+  "background": {
+    "service_worker": "src/worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "src/loader.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/*.js",
+        "src/core/*.js"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
