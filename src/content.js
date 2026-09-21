@@ -234,11 +234,24 @@ async function detectPolicyLink() {
     if (response.action === "cached") {
       // Badge is already set by the worker. Auto-show panel if threshold met.
       if (response.summary && response.settings) {
-        // Re-analyze to get the full verdict for the panel (cache only has summary).
         if (meetsThreshold(response.summary.decision, response.settings.autoPanel) && !state.shown) {
           state.tagSet = response.summary.tagSet || state.tagSet;
-          const verdict = analyzeWholePage();
-          console.log("[PrivUp] cached → re-analyzed:", verdict.decision, "score:", verdict.riskScore);
+          state.policyLink = link;
+
+          // Re-analyze to get the full verdict for the panel.
+          // If the page DOM has no useful text, fall back to fetching the linked policy.
+          let verdict = analyzeWholePage();
+          if ((verdict.metadata?.empty_document || !verdict.findings.length) && link) {
+            try {
+              const policyResponse = await fetch(link.url, { credentials: "omit", redirect: "follow" });
+              if (policyResponse.ok) {
+                const html = (await policyResponse.text()).slice(0, MAX_DOCUMENT_CHARS);
+                verdict = analyzeText(html);
+                state.source = "policy";
+              }
+            } catch (_) { /* use page verdict */ }
+          }
+          console.log("[PrivUp] cached → verdict:", verdict.decision, "score:", verdict.riskScore);
           showProactive(verdict, response.settings);
         }
       }
@@ -248,10 +261,33 @@ async function detectPolicyLink() {
     if (response.action === "analyze") {
       const settings = response.settings || { autoPanel: "deny" };
       state.tagSet = settings.tagSet || state.tagSet;
+      state.policyLink = link;
 
-      const verdict = analyzeWholePage();
-      console.log("[PrivUp] analyzed:", verdict.decision, "score:", verdict.riskScore,
-        "findings:", verdict.findings.length, "threshold:", settings.autoPanel);
+      // First try analyzing the page text itself.
+      let verdict = analyzeWholePage();
+      console.log("[PrivUp] analyzed page:", verdict.decision, "score:", verdict.riskScore,
+        "findings:", verdict.findings.length, "empty:", !!verdict.metadata?.empty_document);
+
+      // If the page DOM has no useful policy text (common: it's a homepage,
+      // not a privacy-policy page), automatically fetch the linked policy and
+      // analyze that instead. This is a same-origin GET for a public document
+      // the user is already browsing.
+      if ((verdict.metadata?.empty_document || !verdict.findings.length) && link) {
+        try {
+          console.log("[PrivUp] page empty, fetching linked policy:", link.url);
+          const policyResponse = await fetch(link.url, { credentials: "omit", redirect: "follow" });
+          if (policyResponse.ok) {
+            const html = (await policyResponse.text()).slice(0, MAX_DOCUMENT_CHARS);
+            verdict = analyzeText(html);
+            state.source = "policy";
+            console.log("[PrivUp] fetched policy verdict:", verdict.decision,
+              "score:", verdict.riskScore, "findings:", verdict.findings.length);
+          }
+        } catch (fetchErr) {
+          console.log("[PrivUp] policy fetch failed, using page verdict:", fetchErr.message);
+        }
+      }
+
       const summary = {
         decision: verdict.decision,
         riskScore: verdict.riskScore,
