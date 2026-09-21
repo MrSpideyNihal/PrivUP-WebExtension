@@ -12,7 +12,7 @@
  *     analyze or use a cached result.
  */
 
-import { getSettings, getCachedVerdict, setCachedVerdict } from "./settings.js";
+import { getSettings, getCachedVerdict, setCachedVerdict, dismissSite } from "./settings.js";
 
 const REMEMBERED_TAG_SET = "tagSet";
 
@@ -93,6 +93,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return undefined;
   }
 
+  if (message.type === "privup:dismiss-site" && message.origin) {
+    (async () => {
+      await dismissSite(message.origin);
+    })();
+    return undefined;
+  }
+
   // Content script found a policy link — check cache and tell it what to do.
   if (message.type === "privup:policy-detected") {
     const tabId = sender.tab?.id;
@@ -103,9 +110,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
 
+      // If user muted this site, set badge if cached, but do not popup
+      if (settings.dismissedSites?.[message.origin]) {
+        const cached = await getCachedVerdict(message.origin);
+        if (cached) await setBadge(tabId, cached.decision);
+        sendResponse({ action: "dismissed", settings });
+        return;
+      }
+
       const cached = await getCachedVerdict(message.origin);
       if (cached) {
         await setBadge(tabId, cached.decision);
+        // If popupFrequency is first-visit, site was already seen; do not auto-popup
+        if (settings.popupFrequency === "first-visit") {
+          sendResponse({ action: "first-visit-cached", summary: cached, settings });
+          return;
+        }
         sendResponse({ action: "cached", summary: cached, settings });
         return;
       }

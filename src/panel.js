@@ -34,19 +34,72 @@ const STYLE = `
 * { box-sizing: border-box; }
 .wrap {
   position: fixed; z-index: 2147483647;
-  right: 16px; bottom: 16px; width: min(392px, calc(100vw - 32px));
-  max-height: min(560px, calc(100vh - 32px));
-  display: flex; flex-direction: column;
   font-family: "Inter Tight", "Segoe UI Variable Display", "Segoe UI", Inter,
                system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   font-size: 14px; line-height: 1.5; color: #16181C;
-  background: #ECECEA; border-radius: 22px;
-  box-shadow: 0 22px 48px -18px rgba(22,24,28,.44);
+  background: #ECECEA; border-radius: 20px;
+  box-shadow: 0 16px 40px -12px rgba(22,24,28,.32), 0 0 0 1px rgba(0,0,0,.08);
   overflow: hidden;
+  transition: max-height .22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .2s ease;
 }
+.wrap.pos-bottom-right {
+  right: 16px; bottom: 16px; width: min(392px, calc(100vw - 32px));
+  max-height: min(560px, calc(100vh - 32px));
+  display: flex; flex-direction: column;
+}
+.wrap.pos-top-center {
+  top: 16px; left: 50%; transform: translateX(-50%);
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(580px, calc(100vh - 32px));
+  display: flex; flex-direction: column;
+}
+.wrap.pos-top-banner {
+  top: 14px; left: 50%; transform: translateX(-50%);
+  width: min(660px, calc(100vw - 28px));
+  max-height: min(580px, calc(100vh - 28px));
+  display: flex; flex-direction: column;
+}
+
+/* Banner bar for pos-top-banner */
+.banner-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 14px; background: #fff; flex: none;
+}
+.banner-left {
+  display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1;
+}
+.banner-badge {
+  font-size: 10.5px; font-weight: 700; color: #fff; padding: 3px 8px; border-radius: 999px;
+  text-transform: uppercase; letter-spacing: 0.03em; flex: none;
+}
+.banner-line {
+  font-size: 12.5px; font-weight: 650; color: #16181C; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis;
+}
+.banner-score {
+  font-size: 11px; color: #61656E; background: #F4F4F2; padding: 2px 7px;
+  border-radius: 6px; flex: none; white-space: nowrap;
+}
+.banner-score strong { color: #16181C; font-weight: 700; }
+.banner-right {
+  display: flex; align-items: center; gap: 6px; flex: none;
+}
+.btn-action {
+  border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-size: 11.5px;
+  font-weight: 600; padding: 6px 12px; transition: opacity .15s ease, background .15s ease;
+}
+.btn-primary {
+  background: #16181C; color: #fff;
+}
+.btn-primary:hover { opacity: .88; }
+.btn-subtle {
+  background: transparent; color: #61656E; padding: 6px 8px;
+}
+.btn-subtle:hover { color: #E1573A; background: #FEF0EE; }
+
 .head {
   display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px; background: #fff;
+  padding: 12px 14px; background: #fff; flex: none;
 }
 .mark { width: 22px; height: 22px; border-radius: 50%; background: #16181C; position: relative; flex: none; }
 .mark::after {
@@ -69,7 +122,18 @@ const STYLE = `
   cursor: pointer; color: #61656E; font: inherit; font-size: 15px; line-height: 1; flex: none;
 }
 .close:hover { background: #E6E6E3; color: #16181C; }
-.body { overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.body {
+  overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px;
+  flex: 1 1 auto; min-height: 0;
+}
+.pos-top-banner .body:not(.is-open) {
+  display: none;
+}
+.body > * { flex-shrink: 0; }
+.body::-webkit-scrollbar { width: 6px; }
+.body::-webkit-scrollbar-track { background: transparent; }
+.body::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 999px; }
+.body::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.25); }
 .verdict {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   border-radius: 18px; padding: 14px 16px; color: #fff;
@@ -95,10 +159,11 @@ const STYLE = `
 .tile i { width: 6px; height: 6px; border-radius: 50%; background: var(--tone); }
 .tile strong { display: block; font-size: 18px; letter-spacing: -0.02em; margin-top: 1px; }
 details.finding {
-  background: #fff; border-radius: 13px; border-left: 3px solid var(--tone); overflow: hidden;
+  background: #fff; border-radius: 13px; border-left: 4px solid var(--tone); overflow: hidden;
+  flex-shrink: 0;
 }
 details.finding summary {
-  display: flex; gap: 8px; padding: 10px 12px; cursor: pointer; list-style: none;
+  display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; cursor: pointer; list-style: none;
   font-size: 13px;
 }
 details.finding summary::-webkit-details-marker { display: none; }
@@ -119,13 +184,18 @@ details[open] .chev { transform: rotate(-135deg); }
 }
 .clause mark { background: color-mix(in srgb, var(--tone) 24%, transparent); color: inherit; border-radius: 3px; }
 .cite { margin: 6px 0 0; font-size: 11px; color: #9A9EA6; }
-.foot { padding: 8px 12px 12px; }
-.foot button {
+.foot { padding: 8px 12px 12px; flex: none; display: flex; flex-direction: column; gap: 6px; }
+.foot button.deepen {
   width: 100%; border: 0; border-radius: 999px; background: #16181C; color: #fff;
   font: inherit; font-size: 12.5px; font-weight: 600; padding: 9px; cursor: pointer;
 }
-.foot button:hover { opacity: .88; }
+.foot button.deepen:hover { opacity: .88; }
 .foot button[disabled] { opacity: .45; cursor: progress; }
+.foot .mute-link {
+  border: 0; background: transparent; color: #9A9EA6; font: inherit; font-size: 11.5px;
+  cursor: pointer; text-align: center; padding: 4px; border-radius: 6px;
+}
+.foot .mute-link:hover { color: #E1573A; text-decoration: underline; }
 .status { margin: 0; padding: 8px 12px; font-size: 12px; color: #61656E; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 `;
@@ -192,7 +262,16 @@ export function removePanel() {
 }
 
 /* Render (or re-render) the panel. Returns handles the caller wires up. */
-export function renderPanel({ verdict, tagSet, tagSets, onTagSet, onDeepen, deepenLabel }) {
+export function renderPanel({
+  verdict,
+  tagSet,
+  tagSets = [],
+  onTagSet,
+  onDeepen,
+  deepenLabel,
+  popupStyle = "top-banner",
+  onDismissSite,
+}) {
   removePanel();
 
   const host = element("div");
@@ -204,29 +283,116 @@ export function renderPanel({ verdict, tagSet, tagSets, onTagSet, onDeepen, deep
 
   const wrap = element("div", "wrap");
   const shape = DECISION[verdict.decision] || DECISION.warning;
+  const score = Math.min(Number(verdict.riskScore) || 0, 100);
 
-  // header
-  const head = element("div", "head");
-  head.append(element("div", "mark"), element("div", "title", "PrivUp"));
-
-  const picker = element("div", "picker");
-  for (const name of tagSets) {
-    const button = element("button", null, name.replace(/_/g, " "));
-    button.type = "button";
-    button.setAttribute("aria-pressed", String(name === tagSet));
-    button.addEventListener("click", () => onTagSet(name));
-    picker.append(button);
+  const isBanner = popupStyle === "top-banner";
+  if (isBanner) {
+    wrap.classList.add("pos-top-banner");
+  } else if (popupStyle === "top-center") {
+    wrap.classList.add("pos-top-center");
+  } else {
+    wrap.classList.add("pos-bottom-right");
   }
-  head.append(picker);
 
-  const close = element("button", "close", "×");
-  close.type = "button";
-  close.setAttribute("aria-label", "Close PrivUp");
-  close.addEventListener("click", removePanel);
-  head.append(close);
-
-  // verdict
+  // Common body
   const body = element("div", "body");
+
+  if (isBanner) {
+    // Top banner horizontal bar
+    const bar = element("div", "banner-bar");
+
+    const left = element("div", "banner-left");
+    left.append(element("div", "mark"));
+
+    const badge = element("span", "banner-badge", shape.kicker);
+    badge.style.background = shape.tone;
+    left.append(badge);
+
+    const lineText = verdict.metadata?.empty_document
+      ? "No readable policy text was found"
+      : shape.line;
+    left.append(element("span", "banner-line", lineText));
+
+    const scorePill = element("span", "banner-score");
+    scorePill.innerHTML = `Risk <strong>${Math.round(score)}</strong>`;
+    left.append(scorePill);
+
+    const right = element("div", "banner-right");
+    const toggleLabel = verdict.findings.length
+      ? `Review findings (${verdict.findings.length})`
+      : "View details";
+    const btnToggle = element("button", "btn-action btn-primary", toggleLabel);
+    btnToggle.type = "button";
+    btnToggle.addEventListener("click", () => {
+      const open = body.classList.toggle("is-open");
+      btnToggle.textContent = open ? "Hide details" : toggleLabel;
+    });
+    right.append(btnToggle);
+
+    if (onDismissSite) {
+      const btnMute = element("button", "btn-action btn-subtle", "Don't show again");
+      btnMute.type = "button";
+      btnMute.title = "Don't pop up again on this site";
+      btnMute.addEventListener("click", () => {
+        onDismissSite();
+        removePanel();
+      });
+      right.append(btnMute);
+    }
+
+    const close = element("button", "close", "×");
+    close.type = "button";
+    close.setAttribute("aria-label", "Close PrivUp");
+    close.addEventListener("click", removePanel);
+    right.append(close);
+
+    bar.append(left, right);
+    wrap.append(bar);
+
+    // If banner, include tag picker row at the top of the body
+    if (tagSets.length > 1) {
+      const pickerRow = element("div", "head");
+      pickerRow.style.padding = "6px 8px";
+      pickerRow.style.background = "transparent";
+      const pickerTitle = element("div", "title", "Rule set:");
+      pickerTitle.style.fontSize = "12px";
+      pickerTitle.style.color = "#61656E";
+      const picker = element("div", "picker");
+      for (const name of tagSets) {
+        const button = element("button", null, name.replace(/_/g, " "));
+        button.type = "button";
+        button.setAttribute("aria-pressed", String(name === tagSet));
+        button.addEventListener("click", () => onTagSet(name));
+        picker.append(button);
+      }
+      pickerRow.append(pickerTitle, picker);
+      body.append(pickerRow);
+    }
+  } else {
+    // Full panel header
+    const head = element("div", "head");
+    head.append(element("div", "mark"), element("div", "title", "PrivUp"));
+
+    const picker = element("div", "picker");
+    for (const name of tagSets) {
+      const button = element("button", null, name.replace(/_/g, " "));
+      button.type = "button";
+      button.setAttribute("aria-pressed", String(name === tagSet));
+      button.addEventListener("click", () => onTagSet(name));
+      picker.append(button);
+    }
+    head.append(picker);
+
+    const close = element("button", "close", "×");
+    close.type = "button";
+    close.setAttribute("aria-label", "Close PrivUp");
+    close.addEventListener("click", removePanel);
+    head.append(close);
+
+    wrap.append(head);
+  }
+
+  // Verdict card
   const card = element("div", "verdict");
   card.style.background = shape.tone;
 
@@ -240,7 +406,6 @@ export function renderPanel({ verdict, tagSet, tagSets, onTagSet, onDeepen, deep
 
   const dial = element("div", "dial");
   const circumference = 2 * Math.PI * 22;
-  const score = Math.min(Number(verdict.riskScore) || 0, 100);
   dial.innerHTML =
     `<svg viewBox="0 0 54 54" aria-hidden="true">` +
     `<circle class="track" cx="27" cy="27" r="22"></circle>` +
@@ -275,18 +440,33 @@ export function renderPanel({ verdict, tagSet, tagSets, onTagSet, onDeepen, deep
     body.append(element("p", "status", "Nothing in this text matched a red flag."));
   }
 
-  wrap.append(head, body);
-
+  // Footer
+  const foot = element("div", "foot");
   if (onDeepen) {
-    const foot = element("div", "foot");
-    const button = element("button", null, deepenLabel || "Analyze the full policy");
+    const button = element("button", "deepen", deepenLabel || "Analyze the full policy");
     button.type = "button";
     button.addEventListener("click", () => onDeepen(button));
     foot.append(button);
-    wrap.append(foot);
   }
+
+  if (onDismissSite) {
+    const muteLink = element("button", "mute-link", "Don't show again on this site");
+    muteLink.type = "button";
+    muteLink.addEventListener("click", () => {
+      onDismissSite();
+      removePanel();
+    });
+    foot.append(muteLink);
+  }
+
+  if (foot.hasChildNodes()) {
+    body.append(foot);
+  }
+
+  wrap.append(body);
 
   shadow.append(style, wrap);
   document.documentElement.append(host);
   return { host, shadow };
 }
+

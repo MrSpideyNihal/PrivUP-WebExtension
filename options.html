@@ -235,7 +235,7 @@
     </div>
 
     <div class="card">
-      <h2>Detection</h2>
+      <h2>Detection & Auto-Scan</h2>
 
       <div class="field">
         <div class="field-label">
@@ -247,17 +247,44 @@
           <span class="slider"></span>
         </label>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>Popup & Notifications</h2>
 
       <div class="field">
         <div class="field-label">
-          <div class="name">Auto-show panel</div>
-          <div class="desc">When to pop up the verdict panel without being clicked</div>
+          <div class="name">Popup position & style</div>
+          <div class="desc">Where and how the warning appears on websites</div>
+        </div>
+        <select id="popupStyle">
+          <option value="top-banner">Top Banner (compact bar at top)</option>
+          <option value="bottom-right">Bottom Right (full panel)</option>
+          <option value="top-center">Top Center (full panel)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          <div class="name">Popup frequency</div>
+          <div class="desc">Prevent annoying popups on repeated visits or page reloads</div>
+        </div>
+        <select id="popupFrequency">
+          <option value="first-visit">Only on first visit to a site</option>
+          <option value="every-visit">Every visit (if risk threshold met)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          <div class="name">Auto-show risk threshold</div>
+          <div class="desc">When to pop up automatically without clicking the toolbar icon</div>
         </div>
         <select id="autoPanel">
-          <option value="never">Never</option>
-          <option value="deny">Only on Deny</option>
+          <option value="deny">Only on Deny (high risk)</option>
           <option value="warning">Deny or Warning</option>
           <option value="always">Always</option>
+          <option value="never">Never (toolbar badge only)</option>
         </select>
       </div>
     </div>
@@ -297,6 +324,20 @@
           </div>
         </div>
         <button class="btn btn-danger" id="clearCache">Clear all</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Muted Sites</h2>
+
+      <div class="field">
+        <div class="field-label">
+          <div class="name">Dismissed sites</div>
+          <div class="desc cache-count">
+            <strong id="dismissedCount">0</strong> sites set to "Don't show again"
+          </div>
+        </div>
+        <button class="btn btn-danger" id="clearDismissed">Unmute all</button>
       </div>
     </div>
 

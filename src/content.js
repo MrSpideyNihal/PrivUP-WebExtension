@@ -81,7 +81,14 @@ function currentVerdict() {
   return analyzeBanner();
 }
 
-function show(verdict) {
+function dismissThisSite() {
+  chrome.runtime?.sendMessage?.({
+    type: "privup:dismiss-site",
+    origin: location.origin,
+  });
+}
+
+function show(verdict, settings = state.settings) {
   state.shown = true;
   renderPanel({
     verdict,
@@ -90,6 +97,8 @@ function show(verdict) {
     onTagSet: switchTagSet,
     onDeepen: state.policyLink && state.source !== "policy" ? deepen : null,
     deepenLabel: state.policyLink ? "Analyze the full privacy policy" : null,
+    popupStyle: settings?.popupStyle || "top-banner",
+    onDismissSite: dismissThisSite,
   });
 
   // Notify the worker so it can set the badge even for banner-triggered verdicts.
@@ -191,19 +200,12 @@ function showProactive(verdict, settings) {
   // Don't clobber a banner verdict already on screen.
   if (state.shown) return;
 
-  state.shown = true;
+  state.settings = settings;
   state.banner = document.body;
   state.source = "page";
   state.policyLink = findPolicyLink(document.body, location.origin);
 
-  renderPanel({
-    verdict,
-    tagSet: state.tagSet,
-    tagSets: availableTagSets(),
-    onTagSet: switchTagSet,
-    onDeepen: state.policyLink ? deepen : null,
-    deepenLabel: state.policyLink ? "Analyze the full privacy policy" : null,
-  });
+  show(verdict, settings);
 }
 
 async function detectPolicyLink() {
@@ -211,6 +213,7 @@ async function detectPolicyLink() {
   if (state.shown) return;
 
   const link = findPolicyLink(document.body, location.origin);
+  console.log("[PrivUp] detectPolicyLink:", link ? link.url : "no link found");
   if (!link) return;
 
   // Ask the service worker: is there a cache hit, or should we analyze?
@@ -222,7 +225,11 @@ async function detectPolicyLink() {
       policyLabel: link.label,
     });
 
-    if (!response || response.action === "skip") return;
+    console.log("[PrivUp] worker response:", response);
+
+    if (!response || response.action === "skip" || response.action === "dismissed" || response.action === "first-visit-cached") {
+      return;
+    }
 
     if (response.action === "cached") {
       // Badge is already set by the worker. Auto-show panel if threshold met.
@@ -231,6 +238,7 @@ async function detectPolicyLink() {
         if (meetsThreshold(response.summary.decision, response.settings.autoPanel) && !state.shown) {
           state.tagSet = response.summary.tagSet || state.tagSet;
           const verdict = analyzeWholePage();
+          console.log("[PrivUp] cached → re-analyzed:", verdict.decision, "score:", verdict.riskScore);
           showProactive(verdict, response.settings);
         }
       }
@@ -242,6 +250,8 @@ async function detectPolicyLink() {
       state.tagSet = settings.tagSet || state.tagSet;
 
       const verdict = analyzeWholePage();
+      console.log("[PrivUp] analyzed:", verdict.decision, "score:", verdict.riskScore,
+        "findings:", verdict.findings.length, "threshold:", settings.autoPanel);
       const summary = {
         decision: verdict.decision,
         riskScore: verdict.riskScore,
@@ -259,8 +269,8 @@ async function detectPolicyLink() {
       // Auto-show panel if threshold met.
       showProactive(verdict, settings);
     }
-  } catch {
-    // Extension context invalidated, page navigated, etc. Fail silently.
+  } catch (err) {
+    console.error("[PrivUp] detectPolicyLink error:", err);
   }
 }
 

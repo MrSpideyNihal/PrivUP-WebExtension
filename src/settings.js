@@ -11,10 +11,13 @@ const SETTINGS_KEY = "privup:settings";
 const CACHE_KEY = "privup:site-cache";
 
 export const DEFAULTS = Object.freeze({
-  autoDetect: true,         // scan every page for a privacy-policy link
-  autoPanel: "deny",        // auto-show the panel: "never" | "deny" | "warning" | "always"
-  cacheTtlHours: 24,        // re-analyze a site after this many hours
-  tagSet: "generic",        // remembered default rule set
+  autoDetect: true,              // scan every page for a privacy-policy link
+  autoPanel: "deny",             // auto-show the panel: "never" | "deny" | "warning" | "always"
+  popupStyle: "top-banner",      // "top-banner" | "bottom-right" | "top-center"
+  popupFrequency: "first-visit", // "first-visit" (once per site) | "every-visit"
+  cacheTtlHours: 24,             // re-analyze a site after this many hours
+  tagSet: "generic",             // remembered default rule set
+  dismissedSites: {},            // { [origin]: timestamp } sites where user chose "don't show again"
 });
 
 /* ---- settings ---- */
@@ -80,4 +83,29 @@ export async function clearCache() {
 export async function getCacheStats() {
   const cache = await readCache();
   return { count: Object.keys(cache).length };
+}
+
+/* ---- dismissed sites (don't show again) ---- */
+
+export async function dismissSite(origin) {
+  const settings = await getSettings();
+  const dismissed = { ...(settings.dismissedSites || {}) };
+  dismissed[origin] = Date.now();
+  await saveSettings({ dismissedSites: dismissed });
+}
+
+export async function undismissSite(origin) {
+  const settings = await getSettings();
+  const dismissed = { ...(settings.dismissedSites || {}) };
+  delete dismissed[origin];
+  await saveSettings({ dismissedSites: dismissed });
+}
+
+export async function clearDismissedSites() {
+  await saveSettings({ dismissedSites: {} });
+}
+
+export async function isSiteDismissed(origin) {
+  const settings = await getSettings();
+  return Boolean(settings.dismissedSites?.[origin]);
 }

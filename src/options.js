@@ -4,7 +4,7 @@
  * Every change is saved immediately — no submit button needed.
  */
 
-import { getSettings, saveSettings, clearCache, getCacheStats } from "./settings.js";
+import { getSettings, saveSettings, clearCache, getCacheStats, clearDismissedSites } from "./settings.js";
 import { availableTagSets } from "./core/main.js";
 
 const $ = (id) => document.getElementById(id);
@@ -28,6 +28,12 @@ async function refreshCacheCount() {
   $("cacheCount").textContent = String(stats.count);
 }
 
+async function refreshDismissedCount() {
+  const settings = await getSettings();
+  const count = Object.keys(settings.dismissedSites || {}).length;
+  $("dismissedCount").textContent = String(count);
+}
+
 async function init() {
   const settings = await getSettings();
 
@@ -37,7 +43,19 @@ async function init() {
     save({ autoDetect: e.target.checked });
   });
 
-  // Auto-panel dropdown
+  // Popup style dropdown
+  $("popupStyle").value = settings.popupStyle || "top-banner";
+  $("popupStyle").addEventListener("change", (e) => {
+    save({ popupStyle: e.target.value });
+  });
+
+  // Popup frequency dropdown
+  $("popupFrequency").value = settings.popupFrequency || "first-visit";
+  $("popupFrequency").addEventListener("change", (e) => {
+    save({ popupFrequency: e.target.value });
+  });
+
+  // Auto-panel threshold dropdown
   $("autoPanel").value = settings.autoPanel;
   $("autoPanel").addEventListener("change", (e) => {
     save({ autoPanel: e.target.value });
@@ -67,6 +85,14 @@ async function init() {
   $("clearCache").addEventListener("click", async () => {
     await clearCache();
     await refreshCacheCount();
+    flash();
+  });
+
+  // Dismissed sites count + clear
+  await refreshDismissedCount();
+  $("clearDismissed").addEventListener("click", async () => {
+    await clearDismissedSites();
+    await refreshDismissedCount();
     flash();
   });
 }
