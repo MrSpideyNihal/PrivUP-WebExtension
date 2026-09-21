@@ -10,6 +10,11 @@
 const SETTINGS_KEY = "privup:settings";
 const CACHE_KEY = "privup:site-cache";
 
+/* Bump this whenever the analysis pipeline changes in a way that makes
+ * old cached verdicts unreliable. Old entries without this version are
+ * automatically treated as stale and re-analyzed. */
+const CACHE_VERSION = 2;
+
 export const DEFAULTS = Object.freeze({
   autoDetect: true,              // scan every page for a privacy-policy link
   autoPanel: "deny",             // auto-show the panel: "never" | "deny" | "warning" | "always"
@@ -62,6 +67,9 @@ export async function getCachedVerdict(origin) {
   const entry = cache[origin];
   if (!entry) return null;
 
+  // Invalidate entries from older cache versions (e.g. before fetchPolicyOrPage).
+  if ((entry.v || 1) < CACHE_VERSION) return null;
+
   const settings = await getSettings();
   const ageMs = Date.now() - (entry.timestamp || 0);
   const ttlMs = (settings.cacheTtlHours || 24) * 60 * 60 * 1000;
@@ -72,7 +80,7 @@ export async function getCachedVerdict(origin) {
 
 export async function setCachedVerdict(origin, summary) {
   const cache = await readCache();
-  cache[origin] = { ...summary, timestamp: Date.now() };
+  cache[origin] = { ...summary, v: CACHE_VERSION, timestamp: Date.now() };
   await writeCache(cache);
 }
 

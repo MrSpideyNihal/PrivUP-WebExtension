@@ -340,22 +340,40 @@ if (document.body) start();
 else document.addEventListener("DOMContentLoaded", start, { once: true });
 
 /* Toolbar click: analyze whatever is on the page right now, even with no
- * banner. Wired from the service worker. */
+ * banner. If a policy link is detected that points to a different page,
+ * fetch and analyze that URL for a proper verdict. */
 chrome.runtime?.onMessage?.addListener((message, _sender, respond) => {
   if (message?.type !== "privup:analyze") return undefined;
 
   state.shown = false;
   state.tagSet = message.tagSet || state.tagSet;
   state.banner = document.body;
-  state.source = "page";
   state.policyLink = findPolicyLink(document.body, location.origin);
 
   removePanel();
-  const verdict = analyzeWholePage();
-  show(verdict);
-  respond?.({ decision: verdict.decision, findings: verdict.findings.length });
+
+  // Use fetchPolicyOrPage so toolbar clicks on homepages get the real
+  // policy verdict, not a DOM scrape of marketing copy.
+  if (state.policyLink) {
+    fetchPolicyOrPage(state.policyLink).then((verdict) => {
+      show(verdict);
+      respond?.({ decision: verdict.decision, findings: verdict.findings.length });
+    }).catch(() => {
+      // fallback
+      state.source = "page";
+      const verdict = analyzeWholePage();
+      show(verdict);
+      respond?.({ decision: verdict.decision, findings: verdict.findings.length });
+    });
+  } else {
+    state.source = "page";
+    const verdict = analyzeWholePage();
+    show(verdict);
+    respond?.({ decision: verdict.decision, findings: verdict.findings.length });
+  }
   return true;
 });
+
 
 /* Dev-harness hook, present only when this is not running as an extension.
  * extension/dev/harness.html uses it to re-arm the trigger between banner
