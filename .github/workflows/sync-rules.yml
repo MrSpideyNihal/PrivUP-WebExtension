@@ -1,0 +1,59 @@
+name: Sync rule sets from Privup core
+
+on:
+  repository_dispatch:
+    types: [rules-updated]
+  schedule:
+    - cron: "17 3 * * *"   # daily safety net in case a dispatch is missed
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch current rule sets from the public core repo
+        run: |
+          rm -rf .privup-core
+          git clone --depth 1 https://github.com/MrSpideyNihal/Privup.git .privup-core
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Regenerate src/core/rulesets.generated.js
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          src = pathlib.Path(".privup-core/core/tags/rulesets")
+          rule_sets = {}
+          for p in sorted(src.glob("*.json")):
+              data = json.loads(p.read_text(encoding="utf-8"))
+              rule_sets[data["name"]] = data
+          banner = (
+              "/* GENERATED FILE - DO NOT EDIT.\n"
+              " *\n"
+              " * Mirror of core/tags/rulesets/*.json from the public Privup repo.\n"
+              " * Regenerated automatically by .github/workflows/sync-rules.yml.\n"
+              " */\n"
+          )
+          body = json.dumps(rule_sets, indent=2, ensure_ascii=False, sort_keys=True)
+          out = pathlib.Path("src/core/rulesets.generated.js")
+          out.write_text(f"{banner}\nexport const RULE_SETS = {body};\n", encoding="utf-8")
+          PY
+
+      - name: Commit if changed
+        run: |
+          git config user.name "privup-sync-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if ! git diff --quiet -- src/core/rulesets.generated.js; then
+            git add src/core/rulesets.generated.js
+            git commit -m "chore: sync rule sets from Privup core"
+            git push
+          else
+            echo "already up to date"
+          fi
+
+      - name: Clean up
+        run: rm -rf .privup-core
