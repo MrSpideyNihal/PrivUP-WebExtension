@@ -216,7 +216,43 @@ function showProactive(verdict, settings) {
   show(verdict, settings);
 }
 
+
+/* Fetch and analyze the linked policy URL when it's a different page from the
+ * current one (e.g. we're on the homepage but the policy is at /legal/terms).
+ * If the link URL is the same page we're on, or if the fetch fails, falls back
+ * to analyzing the current page's DOM.
+ *
+ * This is always a same-origin, credentials-omit GET for a public document. */
+async function fetchPolicyOrPage(link) {
+  let linkPathname;
+  try { linkPathname = new URL(link.url).pathname; } catch (_) { linkPathname = null; }
+  const currentPathname = location.pathname;
+
+  // If the policy link points somewhere OTHER than this page, fetch it.
+  if (linkPathname && linkPathname !== currentPathname) {
+    try {
+      console.log("[PrivUp] fetching linked policy:", link.url);
+      const res = await fetch(link.url, { credentials: "omit", redirect: "follow" });
+      if (res.ok) {
+        const html = (await res.text()).slice(0, MAX_DOCUMENT_CHARS);
+        state.source = "policy";
+        const verdict = analyzeText(html);
+        console.log("[PrivUp] fetched policy verdict:", verdict.decision,
+          "score:", verdict.riskScore, "findings:", verdict.findings.length);
+        return verdict;
+      }
+    } catch (err) {
+      console.log("[PrivUp] policy fetch failed, falling back to page DOM:", err.message);
+    }
+  }
+
+  // Already on the policy page, or fetch failed — analyze the current page DOM.
+  state.source = "page";
+  return analyzeWholePage();
+}
+
 async function detectPolicyLink() {
+
   // Don't interfere if a banner was already detected and shown.
   if (state.shown) return;
 
@@ -246,19 +282,9 @@ async function detectPolicyLink() {
           state.tagSet = response.summary.tagSet || state.tagSet;
           state.policyLink = link;
 
-          // Re-analyze to get the full verdict for the panel.
-          // If the page DOM has no useful text, fall back to fetching the linked policy.
-          let verdict = analyzeWholePage();
-          if ((verdict.metadata?.empty_document || !verdict.findings.length) && link) {
-            try {
-              const policyResponse = await fetch(link.url, { credentials: "omit", redirect: "follow" });
-              if (policyResponse.ok) {
-                const html = (await policyResponse.text()).slice(0, MAX_DOCUMENT_CHARS);
-                verdict = analyzeText(html);
-                state.source = "policy";
-              }
-            } catch (_) { /* use page verdict */ }
-          }
+          // For the full panel verdict, always prefer the linked policy URL
+          // over the current page DOM (homepage ≠ privacy policy).
+          const verdict = await fetchPolicyOrPage(link);
           console.log("[PrivUp] cached → verdict:", verdict.decision, "score:", verdict.riskScore);
           showProactive(verdict, response.settings);
         }
@@ -271,30 +297,9 @@ async function detectPolicyLink() {
       state.tagSet = settings.tagSet || state.tagSet;
       state.policyLink = link;
 
-      // First try analyzing the page text itself.
-      let verdict = analyzeWholePage();
-      console.log("[PrivUp] analyzed page:", verdict.decision, "score:", verdict.riskScore,
-        "findings:", verdict.findings.length, "empty:", !!verdict.metadata?.empty_document);
-
-      // If the page DOM has no useful policy text (common: it's a homepage,
-      // not a privacy-policy page), automatically fetch the linked policy and
-      // analyze that instead. This is a same-origin GET for a public document
-      // the user is already browsing.
-      if ((verdict.metadata?.empty_document || !verdict.findings.length) && link) {
-        try {
-          console.log("[PrivUp] page empty, fetching linked policy:", link.url);
-          const policyResponse = await fetch(link.url, { credentials: "omit", redirect: "follow" });
-          if (policyResponse.ok) {
-            const html = (await policyResponse.text()).slice(0, MAX_DOCUMENT_CHARS);
-            verdict = analyzeText(html);
-            state.source = "policy";
-            console.log("[PrivUp] fetched policy verdict:", verdict.decision,
-              "score:", verdict.riskScore, "findings:", verdict.findings.length);
-          }
-        } catch (fetchErr) {
-          console.log("[PrivUp] policy fetch failed, using page verdict:", fetchErr.message);
-        }
-      }
+      const verdict = await fetchPolicyOrPage(link);
+      console.log("[PrivUp] analyzed:", verdict.decision, "score:", verdict.riskScore,
+        "findings:", verdict.findings.length, "source:", state.source);
 
       const summary = {
         decision: verdict.decision,
