@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrivUp Settings</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Inter Tight", "Segoe UI Variable Display", "Segoe UI", Inter,
+                   system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+      background: #F4F4F2;
+      color: #16181C;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .mark {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #16181C; position: relative; flex: none;
+    }
+    .mark::after {
+      content: ""; position: absolute; inset: 0; border-radius: 50%;
+      background: conic-gradient(#E1573A 0 25%, transparent 25% 100%);
+      -webkit-mask: radial-gradient(circle at 50% 50%, transparent 44%, #000 45%);
+      mask: radial-gradient(circle at 50% 50%, transparent 44%, #000 45%);
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .header .subtitle {
+      font-size: 13px;
+      color: #61656E;
+      font-weight: 400;
+    }
+
+    /* Cards */
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+
+    .card h2 {
+      font-size: 14px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      margin-bottom: 16px;
+      color: #16181C;
+    }
+
+    .field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+    }
+
+    .field + .field {
+      border-top: 1px solid #F4F4F2;
+    }
+
+    .field-label {
+      flex: 1;
+    }
+
+    .field-label .name {
+      font-size: 13.5px;
+      font-weight: 550;
+    }
+
+    .field-label .desc {
+      font-size: 12px;
+      color: #9A9EA6;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 44px; height: 24px;
+      flex: none;
+      margin-left: 16px;
+    }
+
+    .toggle input {
+      opacity: 0; width: 0; height: 0; position: absolute;
+    }
+
+    .toggle .slider {
+      position: absolute; inset: 0;
+      background: #D1D3D8;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background .2s ease;
+    }
+
+    .toggle .slider::after {
+      content: "";
+      position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,.15);
+    }
+
+    .toggle input:checked + .slider {
+      background: #2E8B62;
+    }
+
+    .toggle input:checked + .slider::after {
+      transform: translateX(20px);
+    }
+
+    /* Select */
+    select {
+      font: inherit;
+      font-size: 13px;
+      font-weight: 550;
+      color: #16181C;
+      background: #F4F4F2;
+      border: 1px solid #E6E6E3;
+      border-radius: 10px;
+      padding: 7px 28px 7px 10px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239A9EA6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      flex: none;
+      margin-left: 16px;
+    }
+
+    select:focus {
+      outline: 2px solid #2E8B62;
+      outline-offset: 1px;
+    }
+
+    /* Button */
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 9px 16px;
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s ease;
+      flex: none;
+      margin-left: 16px;
+    }
+
+    .btn:hover { opacity: .85; }
+
+    .btn-danger {
+      background: #FEF0EE;
+      color: #E1573A;
+    }
+
+    /* Cache info */
+    .cache-count {
+      font-size: 12.5px;
+      color: #61656E;
+    }
+
+    .cache-count strong {
+      color: #16181C;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 11.5px;
+      color: #9A9EA6;
+    }
+
+    /* Saved indicator */
+    .saved {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: #16181C;
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: 999px;
+      opacity: 0;
+      transition: transform .3s ease, opacity .3s ease;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .saved.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="mark"></div>
+      <div>
+        <h1>PrivUp</h1>
+        <div class="subtitle">Settings</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Detection</h2>
+
+      <div class="field">
+        <div class="field-label">
+          <div class="name">Auto-detect policy links</div>
+          <div class="desc">Scan every page for a privacy policy link and quietly analyze it</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="autoDetect">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          <div class="name">Auto-show panel</div>
+          <div class="desc">When to pop up the verdict panel without being clicked</div>
+        </div>
+        <select id="autoPanel">
+          <option value="never">Never</option>
+          <option value="deny">Only on Deny</option>
+          <option value="warning">Deny or Warning</option>
+          <option value="always">Always</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Defaults</h2>
+
+      <div class="field">
+        <div class="field-label">
+          <div class="name">Default rule set</div>
+          <div class="desc">Used for auto-detection and as the initial choice on toolbar click</div>
+        </div>
+        <select id="tagSet"></select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Cache</h2>
+
+      <div class="field">
+        <div class="field-label">
+          <div class="name">Re-analyze after</div>
+          <div class="desc">How long to remember a site's verdict before checking again</div>
+        </div>
+        <select id="cacheTtlHours">
+          <option value="12">12 hours</option>
+          <option value="24">24 hours</option>
+          <option value="168">7 days</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          <div class="name">Cached sites</div>
+          <div class="desc cache-count">
+            <strong id="cacheCount">0</strong> sites remembered
+          </div>
+        </div>
+        <button class="btn btn-danger" id="clearCache">Clear all</button>
+      </div>
+    </div>
+
+    <div class="footer">
+      PrivUp WebExtension · built by Nihal Rodge
+    </div>
+  </div>
+
+  <div class="saved" id="saved">Settings saved</div>
+
+  <script type="module" src="src/options.js"></script>
+</body>
+</html>

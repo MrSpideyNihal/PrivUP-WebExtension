@@ -3,6 +3,7 @@
   "name": "PrivUp",
   "version": "0.1.0",
   "description": "Know what you're agreeing to. Reads consent banners and policies on your device and gives a plain Allow, Warning or Deny.",
+  "options_page": "options.html",
   "action": {
     "default_title": "Analyze this page with PrivUp"
   },

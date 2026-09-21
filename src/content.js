@@ -5,6 +5,12 @@
  * to seconds after load, which is exactly the moment PrivUp needs to speak:
  * before the user taps Accept.
  *
+ * A second path — proactive policy-link detection — runs on every page load
+ * when autoDetect is enabled. It finds a privacy-policy link in the DOM (pure
+ * read, no fetch), asks the service worker whether a cached verdict exists,
+ * and if not, analyzes the page text. The panel auto-shows only when the
+ * verdict is bad enough (controlled by the autoPanel setting).
+ *
  * Everything runs here, in the page's own process. No network request is made
  * without a click, and none is ever made to anywhere but the site the user is
  * already on.
@@ -85,6 +91,12 @@ function show(verdict) {
     onDeepen: state.policyLink && state.source !== "policy" ? deepen : null,
     deepenLabel: state.policyLink ? "Analyze the full privacy policy" : null,
   });
+
+  // Notify the worker so it can set the badge even for banner-triggered verdicts.
+  chrome.runtime?.sendMessage?.({
+    type: "privup:banner-verdict",
+    decision: verdict.decision,
+  });
 }
 
 /* Changing the rule set re-runs the pipeline rather than filtering the
@@ -100,7 +112,7 @@ function switchTagSet(name) {
   show(currentVerdict());
 }
 
-/* ---------- trigger ---------- */
+/* ---------- banner trigger (existing) ---------- */
 
 function considerElement(element) {
   if (state.shown || !looksLikeBanner(element)) return false;
@@ -159,9 +171,110 @@ const observer = new MutationObserver((records) => {
   }, SETTLE_MS);
 });
 
+/* ---------- proactive policy-link detection (new) ---------- */
+
+/* Does the autoPanel threshold allow showing the panel for this decision?
+ * "deny"    → only on deny
+ * "warning" → deny or warning
+ * "always"  → any decision
+ * "never"   → never auto-show */
+function meetsThreshold(decision, autoPanel) {
+  if (autoPanel === "never") return false;
+  if (autoPanel === "always") return true;
+  if (autoPanel === "warning") return decision === "deny" || decision === "warning";
+  // "deny" (default)
+  return decision === "deny";
+}
+
+function showProactive(verdict, settings) {
+  if (!meetsThreshold(verdict.decision, settings.autoPanel)) return;
+  // Don't clobber a banner verdict already on screen.
+  if (state.shown) return;
+
+  state.shown = true;
+  state.banner = document.body;
+  state.source = "page";
+  state.policyLink = findPolicyLink(document.body, location.origin);
+
+  renderPanel({
+    verdict,
+    tagSet: state.tagSet,
+    tagSets: availableTagSets(),
+    onTagSet: switchTagSet,
+    onDeepen: state.policyLink ? deepen : null,
+    deepenLabel: state.policyLink ? "Analyze the full privacy policy" : null,
+  });
+}
+
+async function detectPolicyLink() {
+  // Don't interfere if a banner was already detected and shown.
+  if (state.shown) return;
+
+  const link = findPolicyLink(document.body, location.origin);
+  if (!link) return;
+
+  // Ask the service worker: is there a cache hit, or should we analyze?
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: "privup:policy-detected",
+      origin: location.origin,
+      policyUrl: link.url,
+      policyLabel: link.label,
+    });
+
+    if (!response || response.action === "skip") return;
+
+    if (response.action === "cached") {
+      // Badge is already set by the worker. Auto-show panel if threshold met.
+      if (response.summary && response.settings) {
+        // Re-analyze to get the full verdict for the panel (cache only has summary).
+        if (meetsThreshold(response.summary.decision, response.settings.autoPanel) && !state.shown) {
+          state.tagSet = response.summary.tagSet || state.tagSet;
+          const verdict = analyzeWholePage();
+          showProactive(verdict, response.settings);
+        }
+      }
+      return;
+    }
+
+    if (response.action === "analyze") {
+      const settings = response.settings || { autoPanel: "deny" };
+      state.tagSet = settings.tagSet || state.tagSet;
+
+      const verdict = analyzeWholePage();
+      const summary = {
+        decision: verdict.decision,
+        riskScore: verdict.riskScore,
+        findingCount: verdict.findings.length,
+        tagSet: state.tagSet,
+      };
+
+      // Tell the worker to cache it and set the badge.
+      chrome.runtime?.sendMessage?.({
+        type: "privup:verdict-ready",
+        origin: location.origin,
+        summary,
+      });
+
+      // Auto-show panel if threshold met.
+      showProactive(verdict, settings);
+    }
+  } catch {
+    // Extension context invalidated, page navigated, etc. Fail silently.
+  }
+}
+
+/* ---------- startup ---------- */
+
 function start() {
+  // Existing: scan for consent banners in the initial DOM.
   scan(document.body);
   observer.observe(document.body, { childList: true, subtree: true });
+
+  // New: proactive policy-link detection, after a short delay to let the
+  // banner observer have first shot. If a banner is found and shown in
+  // that window, detectPolicyLink() bails out immediately.
+  setTimeout(detectPolicyLink, SETTLE_MS + 100);
 }
 
 if (document.body) start();
