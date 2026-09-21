@@ -197,6 +197,24 @@ details[open] .chev { transform: rotate(-135deg); }
 }
 .foot .mute-link:hover { color: #E1573A; text-decoration: underline; }
 .status { margin: 0; padding: 8px 12px; font-size: 12px; color: #61656E; }
+.source-bar {
+  display: flex; align-items: center; gap: 5px; padding: 7px 12px;
+  background: #F4F4F2; border-top: 1px solid #EBEBEA; flex-shrink: 0;
+}
+.source-label {
+  font-size: 10.5px; color: #9A9EA6; white-space: nowrap; flex: none;
+}
+.source-link {
+  font-size: 10.5px; color: #61656E; text-decoration: none; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  border-radius: 4px; padding: 1px 0;
+}
+.source-link:hover { color: #16181C; text-decoration: underline; }
+.banner-source {
+  font-size: 10px; color: #9A9EA6; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 220px; display: none;
+}
+@media (min-width: 500px) { .banner-source { display: inline; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 `;
 
@@ -271,6 +289,7 @@ export function renderPanel({
   deepenLabel,
   popupStyle = "top-banner",
   onDismissSite,
+  sourceUrl,
 }) {
   removePanel();
 
@@ -312,6 +331,15 @@ export function renderPanel({
       ? "No readable policy text was found"
       : shape.line;
     left.append(element("span", "banner-line", lineText));
+
+    if (sourceUrl) {
+      let displayHost = sourceUrl;
+      try { displayHost = new URL(sourceUrl).pathname; } catch (_) {}
+      const src = element("span", "banner-source");
+      src.title = sourceUrl;
+      src.textContent = displayHost;
+      left.append(src);
+    }
 
     const scorePill = element("span", "banner-score");
     scorePill.innerHTML = `Risk <strong>${Math.round(score)}</strong>`;
@@ -415,6 +443,26 @@ export function renderPanel({
 
   card.append(copy, dial);
   body.append(card);
+
+  // Source URL bar — shows which policy document was actually analyzed
+  if (sourceUrl) {
+    const srcBar = element("div", "source-bar");
+    srcBar.append(element("span", "source-label", "Analyzed:"));
+    const srcLink = document.createElement("a");
+    srcLink.className = "source-link";
+    srcLink.href = sourceUrl;
+    srcLink.target = "_blank";
+    srcLink.rel = "noopener noreferrer";
+    srcLink.title = sourceUrl;
+    let displayUrl = sourceUrl;
+    try {
+      const u = new URL(sourceUrl);
+      displayUrl = u.host + u.pathname.replace(/\/+$/, "");
+    } catch (_) {}
+    srcLink.textContent = displayUrl;
+    srcBar.append(srcLink);
+    body.append(srcBar);
+  }
 
   const notice = verdict.metadata?.relevance?.notice;
   if (notice) body.append(element("p", "notice", notice));

@@ -90,6 +90,13 @@ function dismissThisSite() {
 
 function show(verdict, settings = state.settings) {
   state.shown = true;
+
+  // Show the URL of the document that was actually analyzed.
+  // Only shown when it differs from the current page (i.e. a fetched policy).
+  const sourceUrl = state.source === "policy" && state.policyLink
+    ? state.policyLink.url
+    : null;
+
   renderPanel({
     verdict,
     tagSet: state.tagSet,
@@ -99,6 +106,7 @@ function show(verdict, settings = state.settings) {
     deepenLabel: state.policyLink ? "Analyze the full privacy policy" : null,
     popupStyle: settings?.popupStyle || "top-banner",
     onDismissSite: dismissThisSite,
+    sourceUrl,
   });
 
   // Notify the worker so it can set the badge even for banner-triggered verdicts.
