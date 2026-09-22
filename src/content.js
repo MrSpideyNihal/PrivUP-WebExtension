@@ -22,7 +22,21 @@ import { removePanel, renderPanel } from "./panel.js";
 
 const DEFAULT_TAG_SET = "generic";
 const SETTLE_MS = 350;
-const MAX_DOCUMENT_CHARS = 400_000;
+const MAX_DOCUMENT_CHARS = 800_000;
+
+/* Strip script, style, noscript, svg, and large data-* attributes from raw
+ * HTML before applying the size limit. Sites like bajajfinserv.in ship 900k+
+ * of HTML where 700k is inline scripts, JSON config blobs, and SVG icons —
+ * the actual policy text lives past the old 400k cutoff and was silently
+ * discarded. Stripping noise first ensures the real content survives. */
+function stripNoise(html) {
+  return html
+    .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript\b[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<svg\b[\s\S]*?<\/svg>/gi, " ")
+    .replace(/\sdata-[a-z-]+="[^"]{200,}"/gi, " ");
+}
 
 const state = {
   tagSet: DEFAULT_TAG_SET,
@@ -65,7 +79,7 @@ async function deepen(button) {
   try {
     const response = await fetch(link.url, { credentials: "omit", redirect: "follow" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const html = (await response.text()).slice(0, MAX_DOCUMENT_CHARS);
+    const html = stripNoise(await response.text()).slice(0, MAX_DOCUMENT_CHARS);
     state.source = "policy";
     show(analyzeText(html));
   } catch (error) {
@@ -272,7 +286,7 @@ async function fetchPolicyOrPage(link) {
         console.log("[PrivUp] policy fetch HTTP error:", res.status);
         return unreadableVerdict("fetch_failed", link.url);
       }
-      html = (await res.text()).slice(0, MAX_DOCUMENT_CHARS);
+      html = stripNoise(await res.text()).slice(0, MAX_DOCUMENT_CHARS);
     } catch (err) {
       console.log("[PrivUp] policy fetch network error:", err.message);
       return unreadableVerdict("fetch_failed", link.url);
