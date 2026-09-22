@@ -37,6 +37,79 @@ function riskScore(findings) {
   return Math.round(Math.min(100.0, total) * 10) / 10;
 }
 
+const RULE_LABELS = {
+  "gdpr.retention.indefinite": "indefinite data retention",
+  "gdpr.retention.vague": "vague retention limits",
+  "gdpr.sharing.sale": "selling personal data",
+  "gdpr.sharing.third_party": "third-party data sharing",
+  "gdpr.tracking.profiling": "user profiling",
+  "gdpr.tracking.cross_site": "cross-site tracking",
+  "gdpr.tracking.targeted_ads": "targeted advertising",
+  "ai.training_on_user_content": "AI training on user content",
+  "gdpr.consent.bundled": "bundled agreement",
+  "gdpr.change.unilateral": "terms changed without notice",
+  "gdpr.transfer.cross_border": "overseas data transfer",
+  "gdpr.security.disclaimed": "disclaimed security liability",
+  "gdpr.optout.absent": "no opt-out or deletion options",
+  "rbi.permission.contacts": "reads phone contacts",
+  "rbi.permission.call_logs": "reads call logs",
+  "rbi.permission.sms": "reads text messages",
+  "rbi.permission.files_media": "accesses device files",
+  "rbi.permission.installed_apps": "inspects installed apps",
+  "rbi.permission.one_time_unqualified": "continuous device access",
+  "rbi.charges.interest_high": "high interest rates",
+  "rbi.charges.penal_daily": "daily penal interest",
+  "rbi.charges.non_refundable_fee": "non-refundable fees",
+  "rbi.charges.processing_fee": "processing fee deductions",
+  "rbi.charges.cooling_off_charged": "cooling-off exit fee",
+  "rbi.charges.foreclosure_penalty": "early repayment penalty",
+  "rbi.charges.undisclosed": "undisclosed open charges",
+  "rbi.recovery.third_party_agents": "third-party debt recovery",
+  "rbi.consent.no_withdrawal": "no consent withdrawal",
+  "rbi.disclosure.no_lender_named": "unnamed regulated lender",
+  "rbi.consent.bundled": "bundled consent",
+};
+
+/* Build a short human-readable summary of all findings for the verdict heading.
+ * Translates findings into concise topical labels, sorts by severity, and joins
+ * them into an informative sentence replacing generic placeholder copy. */
+export function generateHeadline(orderedFindings) {
+  if (!orderedFindings || !orderedFindings.length) return null;
+
+  const seen = new Set();
+  const topics = [];
+  for (const f of orderedFindings) {
+    const label = RULE_LABELS[f.ruleId] || (f.category ? f.category.replace(/_/g, " ") : null);
+    if (label && !seen.has(label)) {
+      seen.add(label);
+      topics.push(label);
+    }
+  }
+
+  if (!topics.length) {
+    const fallbackReason = orderedFindings[0]?.reason?.replace(/\.\s*$/, "");
+    return fallbackReason || "Concerns detected in policy.";
+  }
+
+  if (topics.length === 1) {
+    const t = topics[0];
+    return t.charAt(0).toUpperCase() + t.slice(1) + " flagged.";
+  }
+
+  const displayed = topics.slice(0, 3);
+  const remaining = topics.length - displayed.length;
+  let text = "";
+  if (displayed.length === 2) {
+    text = `${displayed[0]} and ${displayed[1]}`;
+  } else {
+    text = `${displayed[0]}, ${displayed[1]}, and ${displayed[2]}`;
+  }
+  if (remaining > 0) {
+    text += ` (+${remaining} more)`;
+  }
+  return text.charAt(0).toUpperCase() + text.slice(1) + ".";
+}
+
 export function score(findings, { ruleSet, origin, clausesAnalyzed = 0 }) {
   const ordered = [...findings].sort(compareFindings);
 
@@ -56,7 +129,7 @@ export function score(findings, { ruleSet, origin, clausesAnalyzed = 0 }) {
         findings: [],
         riskScore: 0.0,
         clausesAnalyzed: 0,
-        metadata: { empty_document: true },
+        metadata: { empty_document: true, headline: "No readable policy text found here." },
       });
     }
     return verdict({
@@ -67,7 +140,7 @@ export function score(findings, { ruleSet, origin, clausesAnalyzed = 0 }) {
       findings: [],
       riskScore: 0.0,
       clausesAnalyzed,
-      metadata: { severity_counts: {}, categories: [] },
+      metadata: { severity_counts: {}, categories: [], headline: "No red flags detected in this policy." },
     });
   }
 
@@ -100,6 +173,7 @@ export function score(findings, { ruleSet, origin, clausesAnalyzed = 0 }) {
       severity_counts: counts,
       worst_severity: worst,
       categories: [...new Set(ordered.map((f) => f.category))].sort(),
+      headline: generateHeadline(ordered),
     },
   });
 }

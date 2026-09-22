@@ -64,34 +64,43 @@ const STYLE = `
 }
 .wrap.pos-top-banner {
   top: 14px; left: 50%; transform: translateX(-50%);
-  width: min(660px, calc(100vw - 28px));
+  width: min(780px, calc(100vw - 28px));
   max-height: min(580px, calc(100vh - 28px));
   display: flex; flex-direction: column;
 }
 
 /* Banner bar for pos-top-banner */
 .banner-bar {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  display: flex; flex-direction: column; gap: 7px;
   padding: 10px 14px; background: #fff; flex: none;
 }
+.banner-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
 .banner-left {
-  display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1;
+  display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;
 }
 .banner-badge {
   font-size: 10.5px; font-weight: 700; color: #fff; padding: 3px 8px; border-radius: 999px;
   text-transform: uppercase; letter-spacing: 0.03em; flex: none;
-}
-.banner-line {
-  font-size: 12.5px; font-weight: 650; color: #16181C; white-space: nowrap; overflow: hidden;
-  text-overflow: ellipsis;
 }
 .banner-score {
   font-size: 11px; color: #61656E; background: #F4F4F2; padding: 2px 7px;
   border-radius: 6px; flex: none; white-space: nowrap;
 }
 .banner-score strong { color: #16181C; font-weight: 700; }
+.banner-source {
+  font-size: 11px; color: #9A9EA6; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 180px;
+}
 .banner-right {
   display: flex; align-items: center; gap: 6px; flex: none;
+}
+.banner-headline {
+  font-size: 13px; font-weight: 600; color: #16181C; line-height: 1.4;
+  padding: 6px 10px; background: #F8F8F6; border-radius: 8px;
+  border-left: 3.5px solid var(--banner-tone, #C2761C);
+  word-break: break-word;
 }
 .btn-action {
   border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-size: 11.5px;
@@ -147,8 +156,12 @@ const STYLE = `
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   border-radius: 18px; padding: 14px 16px; color: #fff;
 }
+.verdict .copy { flex: 1; min-width: 0; }
 .kicker { font-size: 11px; font-weight: 600; opacity: .85; margin: 0 0 2px; }
-.line { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; }
+.line {
+  margin: 0; font-size: 14.5px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.3;
+  word-break: break-word;
+}
 .dial { position: relative; width: 54px; height: 54px; flex: none; }
 .dial svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .dial circle { fill: none; stroke-width: 7; stroke-linecap: round; }
@@ -320,6 +333,7 @@ export function renderPanel({
   const shape = (unreadableKey ? UNREADABLE[unreadableKey] : null)
     || DECISION[verdict.decision] || DECISION.warning;
   const score = Math.min(Number(verdict.riskScore) || 0, 100);
+  const headline = (!unreadableKey && meta.headline) ? meta.headline : shape.line;
 
   const isBanner = popupStyle === "top-banner";
   if (isBanner) {
@@ -336,6 +350,9 @@ export function renderPanel({
   if (isBanner) {
     // Top banner horizontal bar
     const bar = element("div", "banner-bar");
+    bar.style.setProperty("--banner-tone", shape.tone);
+
+    const top = element("div", "banner-top");
 
     const left = element("div", "banner-left");
     left.append(element("div", "mark"));
@@ -344,8 +361,9 @@ export function renderPanel({
     badge.style.background = shape.tone;
     left.append(badge);
 
-    // shape.line already carries the right message for unreadable states.
-    left.append(element("span", "banner-line", shape.line));
+    const scorePill = element("span", "banner-score");
+    scorePill.innerHTML = `Risk <strong>${Math.round(score)}</strong>`;
+    left.append(scorePill);
 
     if (sourceUrl) {
       let displayHost = sourceUrl;
@@ -355,10 +373,6 @@ export function renderPanel({
       src.textContent = displayHost;
       left.append(src);
     }
-
-    const scorePill = element("span", "banner-score");
-    scorePill.innerHTML = `Risk <strong>${Math.round(score)}</strong>`;
-    left.append(scorePill);
 
     const right = element("div", "banner-right");
 
@@ -401,7 +415,10 @@ export function renderPanel({
     close.addEventListener("click", removePanel);
     right.append(close);
 
-    bar.append(left, right);
+    top.append(left, right);
+
+    const headlineBlock = element("div", "banner-headline", headline);
+    bar.append(top, headlineBlock);
     wrap.append(bar);
 
     // If banner, include tag picker row at the top of the body
@@ -451,10 +468,10 @@ export function renderPanel({
   const card = element("div", "verdict");
   card.style.background = shape.tone;
 
-  const copy = element("div");
+  const copy = element("div", "copy");
   copy.append(
     element("p", "kicker", shape.kicker),
-    element("p", "line", shape.line)
+    element("p", "line", headline)
   );
 
   const dial = element("div", "dial");
