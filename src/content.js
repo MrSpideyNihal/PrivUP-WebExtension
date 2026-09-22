@@ -217,39 +217,87 @@ function showProactive(verdict, settings) {
 }
 
 
+/* Approximate word count of visible text in a raw HTML string.
+ * Strips tags with a simple regex — accurate enough for the SPA-shell check. */
+function visibleWordCount(html) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 0).length;
+}
+
+/* Minimum visible words before we treat a fetched HTML as real content
+ * rather than a JS shell (e.g. <div id="root"></div>). */
+const SPA_SHELL_THRESHOLD = 120;
+
+/* Synthesize a verdict that carries only a metadata flag, for failure modes
+ * where we couldn't read the policy at all. These are NOT "allow" — they are
+ * "we don't know", and the UI must make that visually distinct from a real
+ * finding. */
+function unreadableVerdict(flag, origin) {
+  return {
+    decision: "warning",
+    riskScore: 0,
+    findings: [],
+    clausesAnalyzed: 0,
+    metadata: { [flag]: true, empty_document: true },
+    origin,
+  };
+}
+
 /* Fetch and analyze the linked policy URL when it's a different page from the
  * current one (e.g. we're on the homepage but the policy is at /legal/terms).
- * If the link URL is the same page we're on, or if the fetch fails, falls back
- * to analyzing the current page's DOM.
  *
- * This is always a same-origin, credentials-omit GET for a public document. */
+ * Handles three failure modes distinctly:
+ *   spa_shell   — fetch returned HTML but it's a JS-rendered shell (< 120 words)
+ *   fetch_failed — network error or non-OK HTTP response
+ *   empty_document — HTML had text but no clauses survived segmentation
+ *
+ * Falls back to the live DOM when the policy link is this very page
+ * (already JS-rendered by the browser). */
 async function fetchPolicyOrPage(link) {
   let linkPathname;
   try { linkPathname = new URL(link.url).pathname; } catch (_) { linkPathname = null; }
   const currentPathname = location.pathname;
 
-  // If the policy link points somewhere OTHER than this page, fetch it.
+  // If the policy link points to a DIFFERENT page, fetch it.
   if (linkPathname && linkPathname !== currentPathname) {
+    let html;
     try {
       console.log("[PrivUp] fetching linked policy:", link.url);
       const res = await fetch(link.url, { credentials: "omit", redirect: "follow" });
-      if (res.ok) {
-        const html = (await res.text()).slice(0, MAX_DOCUMENT_CHARS);
-        state.source = "policy";
-        const verdict = analyzeText(html);
-        console.log("[PrivUp] fetched policy verdict:", verdict.decision,
-          "score:", verdict.riskScore, "findings:", verdict.findings.length);
-        return verdict;
+      if (!res.ok) {
+        console.log("[PrivUp] policy fetch HTTP error:", res.status);
+        return unreadableVerdict("fetch_failed", link.url);
       }
+      html = (await res.text()).slice(0, MAX_DOCUMENT_CHARS);
     } catch (err) {
-      console.log("[PrivUp] policy fetch failed, falling back to page DOM:", err.message);
+      console.log("[PrivUp] policy fetch network error:", err.message);
+      return unreadableVerdict("fetch_failed", link.url);
     }
+
+    // Check if the fetched HTML is a JS-rendered SPA shell.
+    const wordCount = visibleWordCount(html);
+    console.log("[PrivUp] fetched policy visible words:", wordCount);
+    if (wordCount < SPA_SHELL_THRESHOLD) {
+      console.log("[PrivUp] SPA shell detected — not enough text in raw fetch");
+      return unreadableVerdict("spa_shell", link.url);
+    }
+
+    state.source = "policy";
+    const verdict = analyzeText(html);
+    console.log("[PrivUp] fetched policy verdict:", verdict.decision,
+      "score:", verdict.riskScore, "findings:", verdict.findings.length);
+    return verdict;
   }
 
-  // Already on the policy page, or fetch failed — analyze the current page DOM.
+  // Already on the policy page — use the live JS-rendered DOM.
   state.source = "page";
   return analyzeWholePage();
 }
+
 
 async function detectPolicyLink() {
 

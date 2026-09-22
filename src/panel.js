@@ -27,6 +27,15 @@ const DECISION = {
   deny: { tone: "#E1573A", kicker: "Deny", line: "Do not agree to this without reading it in full." },
 };
 
+/* Special shape for cases where we simply couldn't read the policy.
+ * Visually distinct from Warning (orange) so users understand "we don't know"
+ * rather than "we found something bad". */
+const UNREADABLE = {
+  spa_shell:   { tone: "#7A7F88", kicker: "?", line: "This page loads dynamically \u2014 PrivUp couldn\u2019t read the policy." },
+  fetch_failed: { tone: "#7A7F88", kicker: "?", line: "Couldn\u2019t load the privacy policy page." },
+  empty_document: { tone: "#7A7F88", kicker: "?", line: "No readable text found. This is not an all-clear." },
+};
+
 const SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"];
 
 const STYLE = `
@@ -301,7 +310,15 @@ export function renderPanel({
   style.textContent = STYLE;
 
   const wrap = element("div", "wrap");
-  const shape = DECISION[verdict.decision] || DECISION.warning;
+
+  // Unreadable states get a distinct grey shape overriding the decision colour.
+  const meta = verdict.metadata || {};
+  const unreadableKey = meta.spa_shell ? "spa_shell"
+    : meta.fetch_failed ? "fetch_failed"
+    : meta.empty_document ? "empty_document"
+    : null;
+  const shape = (unreadableKey ? UNREADABLE[unreadableKey] : null)
+    || DECISION[verdict.decision] || DECISION.warning;
   const score = Math.min(Number(verdict.riskScore) || 0, 100);
 
   const isBanner = popupStyle === "top-banner";
@@ -327,10 +344,8 @@ export function renderPanel({
     badge.style.background = shape.tone;
     left.append(badge);
 
-    const lineText = verdict.metadata?.empty_document
-      ? "No readable policy text was found"
-      : shape.line;
-    left.append(element("span", "banner-line", lineText));
+    // shape.line already carries the right message for unreadable states.
+    left.append(element("span", "banner-line", shape.line));
 
     if (sourceUrl) {
       let displayHost = sourceUrl;
@@ -346,9 +361,21 @@ export function renderPanel({
     left.append(scorePill);
 
     const right = element("div", "banner-right");
-    const toggleLabel = verdict.findings.length
-      ? `Review findings (${verdict.findings.length})`
-      : "View details";
+
+    // Build a severity summary pill: "1 high · 3 medium" is more informative
+    // than "Review findings (4)" — user sees the severity tier at a glance.
+    let toggleLabel;
+    if (verdict.findings.length) {
+      const counts = verdict.metadata?.severity_counts || {};
+      const parts = ["critical", "high", "medium", "low"]
+        .filter((s) => counts[s])
+        .map((s) => `${counts[s]} ${s}`);
+      toggleLabel = parts.length ? parts.join(" \u00b7 ") : `${verdict.findings.length} finding${verdict.findings.length > 1 ? "s" : ""}`;
+    } else if (unreadableKey) {
+      toggleLabel = "View details";
+    } else {
+      toggleLabel = "View details";
+    }
     const btnToggle = element("button", "btn-action btn-primary", toggleLabel);
     btnToggle.type = "button";
     btnToggle.addEventListener("click", () => {
@@ -427,9 +454,7 @@ export function renderPanel({
   const copy = element("div");
   copy.append(
     element("p", "kicker", shape.kicker),
-    element("p", "line", verdict.metadata?.empty_document
-      ? "No readable policy text was found. This is not an all-clear."
-      : shape.line)
+    element("p", "line", shape.line)
   );
 
   const dial = element("div", "dial");

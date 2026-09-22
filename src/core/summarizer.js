@@ -295,7 +295,7 @@ export function splitSentences(text) {
 
 const MAX_HEADING_WORDS = 14;
 const SECTION_NUMBER = /^\s*\(?(?:\d+(?:\.\d+)*|[A-Z]|[IVXLC]+)[.)]\s+\S/;
-const MIN_CLAUSE_WORDS = 4;
+const MIN_CLAUSE_WORDS = 3;
 
 // A short fragment carrying a figure survives the length filter:
 // "Up to 36% p.a." is three words and it is the entire point.
