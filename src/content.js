@@ -19,6 +19,7 @@
 import { availableTagSets, run, runOnClauses } from "./core/main.js";
 import { clausesFromDom, findPolicyLink, looksLikeBanner } from "./dom.js";
 import { removePanel, renderPanel } from "./panel.js";
+import { isSpaShell, recoverContent } from "./core/spa.js";
 
 const DEFAULT_TAG_SET = "generic";
 const SETTLE_MS = 350;
@@ -79,9 +80,19 @@ async function deepen(button) {
   try {
     const response = await fetch(link.url, { credentials: "omit", redirect: "follow" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const html = stripNoise(await response.text()).slice(0, MAX_DOCUMENT_CHARS);
+    const rawHtml = await response.text();
+    let textToAnalyze = stripNoise(rawHtml).slice(0, MAX_DOCUMENT_CHARS);
+    const wordCount = visibleWordCount(textToAnalyze);
+
+    if (wordCount < SPA_SHELL_THRESHOLD || isSpaShell(rawHtml)) {
+      const recovery = await recoverContent(rawHtml, { url: link.url, enableWayback: false });
+      if (recovery.recovered && recovery.text) {
+        textToAnalyze = recovery.text.slice(0, MAX_DOCUMENT_CHARS);
+      }
+    }
+
     state.source = "policy";
-    show(analyzeText(html));
+    show(analyzeText(textToAnalyze));
   } catch (error) {
     button.disabled = false;
     button.textContent = "Could not read it. Try again";
@@ -265,9 +276,9 @@ function unreadableVerdict(flag, origin) {
  * current one (e.g. we're on the homepage but the policy is at /legal/terms).
  *
  * Handles three failure modes distinctly:
- *   spa_shell   — fetch returned HTML but it's a JS-rendered shell (< 120 words)
- *   fetch_failed — network error or non-OK HTTP response
- *   empty_document — HTML had text but no clauses survived segmentation
+ *   spa_shell: fetch returned HTML but it's an unrecoverable JS-rendered shell
+ *   fetch_failed: network error or non-OK HTTP response
+ *   empty_document: HTML had text but no clauses survived segmentation
  *
  * Falls back to the live DOM when the policy link is this very page
  * (already JS-rendered by the browser). */
@@ -278,7 +289,7 @@ async function fetchPolicyOrPage(link) {
 
   // If the policy link points to a DIFFERENT page, fetch it.
   if (linkPathname && linkPathname !== currentPathname) {
-    let html;
+    let rawHtml;
     try {
       console.log("[PrivUp] fetching linked policy:", link.url);
       const res = await fetch(link.url, { credentials: "omit", redirect: "follow" });
@@ -286,28 +297,36 @@ async function fetchPolicyOrPage(link) {
         console.log("[PrivUp] policy fetch HTTP error:", res.status);
         return unreadableVerdict("fetch_failed", link.url);
       }
-      html = stripNoise(await res.text()).slice(0, MAX_DOCUMENT_CHARS);
+      rawHtml = await res.text();
     } catch (err) {
       console.log("[PrivUp] policy fetch network error:", err.message);
       return unreadableVerdict("fetch_failed", link.url);
     }
 
-    // Check if the fetched HTML is a JS-rendered SPA shell.
-    const wordCount = visibleWordCount(html);
+    let textToAnalyze = stripNoise(rawHtml).slice(0, MAX_DOCUMENT_CHARS);
+    const wordCount = visibleWordCount(textToAnalyze);
     console.log("[PrivUp] fetched policy visible words:", wordCount);
-    if (wordCount < SPA_SHELL_THRESHOLD) {
-      console.log("[PrivUp] SPA shell detected — not enough text in raw fetch");
-      return unreadableVerdict("spa_shell", link.url);
+
+    if (wordCount < SPA_SHELL_THRESHOLD || isSpaShell(rawHtml)) {
+      console.log("[PrivUp] SPA shell detected, attempting zero-dependency recovery...");
+      const recovery = await recoverContent(rawHtml, { url: link.url, enableWayback: false });
+      if (recovery.recovered && recovery.text) {
+        console.log("[PrivUp] Recovered SPA content via:", recovery.method);
+        textToAnalyze = recovery.text.slice(0, MAX_DOCUMENT_CHARS);
+      } else if (wordCount < SPA_SHELL_THRESHOLD) {
+        console.log("[PrivUp] SPA shell could not be recovered");
+        return unreadableVerdict("spa_shell", link.url);
+      }
     }
 
     state.source = "policy";
-    const verdict = analyzeText(html);
+    const verdict = analyzeText(textToAnalyze);
     console.log("[PrivUp] fetched policy verdict:", verdict.decision,
       "score:", verdict.riskScore, "findings:", verdict.findings.length);
     return verdict;
   }
 
-  // Already on the policy page — use the live JS-rendered DOM.
+  // Already on the policy page: use the live JS-rendered DOM.
   state.source = "page";
   return analyzeWholePage();
 }
