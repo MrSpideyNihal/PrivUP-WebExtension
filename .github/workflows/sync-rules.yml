@@ -1,4 +1,4 @@
-name: Sync rule sets from Privup core
+name: Sync rule sets and translations from Privup core
 
 on:
   repository_dispatch:
@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch current rule sets from the public core repo
+      - name: Fetch current rule sets and translations from the public core repo
         run: |
           rm -rf .privup-core
           git clone --depth 1 https://github.com/MrSpideyNihal/Privup.git .privup-core
@@ -43,13 +43,39 @@ jobs:
           out.write_text(f"{banner}\nexport const RULE_SETS = {body};\n", encoding="utf-8")
           PY
 
+      - name: Regenerate src/core/locales.generated.js
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          src = pathlib.Path(".privup-core/core/translator/locales")
+          if not any(src.glob("*.json")):
+              # Never replace working translations with an empty mirror.
+              print("no locale catalogs in core, leaving the mirror as it is")
+              raise SystemExit(0)
+          locales = {}
+          for p in sorted(src.glob("*.json")):
+              data = json.loads(p.read_text(encoding="utf-8"))
+              locales[data["language"]] = data
+          banner = (
+              "/* GENERATED FILE - DO NOT EDIT.\n"
+              " *\n"
+              " * Mirror of core/translator/locales/*.json from the public Privup repo.\n"
+              " * Regenerated automatically by .github/workflows/sync-rules.yml.\n"
+              " */\n"
+          )
+          body = json.dumps(locales, indent=2, ensure_ascii=False, sort_keys=True)
+          out = pathlib.Path("src/core/locales.generated.js")
+          out.write_text(f"{banner}\nexport const LOCALES = {body};\n", encoding="utf-8")
+          PY
+
       - name: Commit if changed
         run: |
           git config user.name "privup-sync-bot"
           git config user.email "actions@users.noreply.github.com"
-          if ! git diff --quiet -- src/core/rulesets.generated.js; then
-            git add src/core/rulesets.generated.js
-            git commit -m "chore: sync rule sets from Privup core"
+          git add -N src/core/locales.generated.js
+          if ! git diff --quiet -- src/core/rulesets.generated.js src/core/locales.generated.js; then
+            git add src/core/rulesets.generated.js src/core/locales.generated.js
+            git commit -m "chore: sync rule sets and translations from Privup core"
             git push
           else
             echo "already up to date"

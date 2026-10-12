@@ -9,9 +9,21 @@
  * CSS that page ships, and a consent banner is exactly the kind of element
  * that comes with aggressive `!important` rules. The shadow boundary means the
  * page cannot restyle the verdict, and PrivUp cannot restyle the page.
+ *
+ * Every fixed string comes from core/translator.js in the user's language.
+ * Policy quotes are never translated.
  */
 
+import { message, SOURCE_LANGUAGE } from "./core/translator.js";
+
 const HOST_ID = "privup-panel-host";
+
+// Language of the panel being rendered. Set at the top of renderPanel.
+let language = SOURCE_LANGUAGE;
+
+function t(key, values) {
+  return message(language, key, values);
+}
 
 const TONES = {
   critical: "#E1573A",
@@ -21,20 +33,27 @@ const TONES = {
   info: "#9A9EA6",
 };
 
-const DECISION = {
-  allow: { tone: "#2E8B62", kicker: "Allow", line: "Nothing here matched a red flag." },
-  warning: { tone: "#C2761C", kicker: "Warning", line: "Read these before you agree." },
-  deny: { tone: "#E1573A", kicker: "Deny", line: "Do not agree to this without reading it in full." },
+const DECISION_TONES = {
+  allow: "#2E8B62",
+  warning: "#C2761C",
+  deny: "#E1573A",
 };
+
+function decisionShape(decision) {
+  const key = DECISION_TONES[decision] ? decision : "warning";
+  return {
+    tone: DECISION_TONES[key],
+    kicker: t(`decision.${key}`),
+    line: t(`decision.${key}.line`),
+  };
+}
 
 /* Special shape for cases where we simply couldn't read the policy.
  * Visually distinct from Warning (orange) so users understand "we don't know"
  * rather than "we found something bad". */
-const UNREADABLE = {
-  spa_shell:   { tone: "#7A7F88", kicker: "?", line: "This page loads dynamically \u2014 PrivUp couldn\u2019t read the policy." },
-  fetch_failed: { tone: "#7A7F88", kicker: "?", line: "Couldn\u2019t load the privacy policy page." },
-  empty_document: { tone: "#7A7F88", kicker: "?", line: "No readable text found. This is not an all-clear." },
-};
+function unreadableShape(key) {
+  return { tone: "#7A7F88", kicker: "?", line: t(`unreadable.${key}`) };
+}
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"];
 
@@ -271,20 +290,17 @@ function renderFinding(f) {
 
   const summary = document.createElement("summary");
   summary.append(
-    element("span", "sev", f.severity),
+    element("span", "sev", t(`severity.${f.severity}`)),
     element("span", "reason", f.reason),
     element("i", "chev")
   );
 
   const evidence = element("div", "evidence");
   if (f.clause.index < 0) {
-    evidence.append(element(
-      "p", "clause",
-      "Nothing anywhere in this document covers this. The finding is the absence."
-    ));
+    evidence.append(element("p", "clause", t("ui.absence")));
   } else {
     if (f.clause.heading) {
-      evidence.append(element("p", "where", `Under "${f.clause.heading}"`));
+      evidence.append(element("p", "where", t("ui.under_heading", { heading: f.clause.heading })));
     }
     evidence.append(quoteClause(f.clause.text, f.matchedText));
   }
@@ -312,8 +328,10 @@ export function renderPanel({
   popupStyle = "top-banner",
   onDismissSite,
   sourceUrl,
+  language: panelLanguage = SOURCE_LANGUAGE,
 }) {
   removePanel();
+  language = panelLanguage;
 
   const host = element("div");
   host.id = HOST_ID;
@@ -330,8 +348,7 @@ export function renderPanel({
     : meta.fetch_failed ? "fetch_failed"
     : meta.empty_document ? "empty_document"
     : null;
-  const shape = (unreadableKey ? UNREADABLE[unreadableKey] : null)
-    || DECISION[verdict.decision] || DECISION.warning;
+  const shape = unreadableKey ? unreadableShape(unreadableKey) : decisionShape(verdict.decision);
   const score = Math.min(Number(verdict.riskScore) || 0, 100);
   const headline = (!unreadableKey && meta.headline) ? meta.headline : shape.line;
 
@@ -362,7 +379,7 @@ export function renderPanel({
     left.append(badge);
 
     const scorePill = element("span", "banner-score");
-    scorePill.innerHTML = `Risk <strong>${Math.round(score)}</strong>`;
+    scorePill.append(`${t("ui.risk")} `, element("strong", null, String(Math.round(score))));
     left.append(scorePill);
 
     if (sourceUrl) {
@@ -383,25 +400,26 @@ export function renderPanel({
       const counts = verdict.metadata?.severity_counts || {};
       const parts = ["critical", "high", "medium", "low"]
         .filter((s) => counts[s])
-        .map((s) => `${counts[s]} ${s}`);
-      toggleLabel = parts.length ? parts.join(" \u00b7 ") : `${verdict.findings.length} finding${verdict.findings.length > 1 ? "s" : ""}`;
-    } else if (unreadableKey) {
-      toggleLabel = "View details";
+        .map((s) => t("severity.count", { n: counts[s], severity: t(`severity.${s}`) }));
+      const n = verdict.findings.length;
+      toggleLabel = parts.length
+        ? parts.join(" \u00b7 ")
+        : t(n === 1 ? "ui.findings.one" : "ui.findings.many", { n });
     } else {
-      toggleLabel = "View details";
+      toggleLabel = t("ui.view_details");
     }
     const btnToggle = element("button", "btn-action btn-primary", toggleLabel);
     btnToggle.type = "button";
     btnToggle.addEventListener("click", () => {
       const open = body.classList.toggle("is-open");
-      btnToggle.textContent = open ? "Hide details" : toggleLabel;
+      btnToggle.textContent = open ? t("ui.hide_details") : toggleLabel;
     });
     right.append(btnToggle);
 
     if (onDismissSite) {
-      const btnMute = element("button", "btn-action btn-subtle", "Don't show again");
+      const btnMute = element("button", "btn-action btn-subtle", t("ui.dont_show_again"));
       btnMute.type = "button";
-      btnMute.title = "Don't pop up again on this site";
+      btnMute.title = t("ui.dont_show_again_title");
       btnMute.addEventListener("click", () => {
         onDismissSite();
         removePanel();
@@ -411,7 +429,7 @@ export function renderPanel({
 
     const close = element("button", "close", "×");
     close.type = "button";
-    close.setAttribute("aria-label", "Close PrivUp");
+    close.setAttribute("aria-label", t("ui.close"));
     close.addEventListener("click", removePanel);
     right.append(close);
 
@@ -426,7 +444,7 @@ export function renderPanel({
       const pickerRow = element("div", "head");
       pickerRow.style.padding = "6px 8px";
       pickerRow.style.background = "transparent";
-      const pickerTitle = element("div", "title", "Rule set:");
+      const pickerTitle = element("div", "title", t("ui.rule_set"));
       pickerTitle.style.fontSize = "12px";
       pickerTitle.style.color = "#61656E";
       const picker = element("div", "picker");
@@ -457,7 +475,7 @@ export function renderPanel({
 
     const close = element("button", "close", "×");
     close.type = "button";
-    close.setAttribute("aria-label", "Close PrivUp");
+    close.setAttribute("aria-label", t("ui.close"));
     close.addEventListener("click", removePanel);
     head.append(close);
 
@@ -489,7 +507,7 @@ export function renderPanel({
   // Source URL bar — shows which policy document was actually analyzed
   if (sourceUrl) {
     const srcBar = element("div", "source-bar");
-    srcBar.append(element("span", "source-label", "Analyzed:"));
+    srcBar.append(element("span", "source-label", t("ui.analyzed")));
     const srcLink = document.createElement("a");
     srcLink.className = "source-link";
     srcLink.href = sourceUrl;
@@ -509,6 +527,15 @@ export function renderPanel({
   const notice = verdict.metadata?.relevance?.notice;
   if (notice) body.append(element("p", "notice", notice));
 
+  // Policy quotes are never translated, so say so, and say when nobody who
+  // speaks the language has checked the translation yet.
+  const translation = verdict.metadata?.translation;
+  if (translation && verdict.findings.length) {
+    const lines = [t("ui.original_language")];
+    if (!translation.reviewed) lines.push(t("ui.unreviewed"));
+    body.append(element("p", "status", lines.join(" ")));
+  }
+
   const counts = verdict.metadata?.severity_counts || {};
   const present = SEVERITY_ORDER.filter((name) => counts[name]);
   if (present.length) {
@@ -517,7 +544,7 @@ export function renderPanel({
       const tile = element("div", "tile");
       tile.style.setProperty("--tone", TONES[name]);
       const label = element("span");
-      label.append(element("i"), document.createTextNode(name));
+      label.append(element("i"), document.createTextNode(t(`severity.${name}`)));
       tile.append(label, element("strong", null, String(counts[name])));
       tiles.append(tile);
     }
@@ -527,20 +554,20 @@ export function renderPanel({
   for (const f of verdict.findings) body.append(renderFinding(f));
 
   if (!verdict.findings.length && !verdict.metadata?.empty_document) {
-    body.append(element("p", "status", "Nothing in this text matched a red flag."));
+    body.append(element("p", "status", t("ui.no_red_flags")));
   }
 
   // Footer
   const foot = element("div", "foot");
   if (onDeepen) {
-    const button = element("button", "deepen", deepenLabel || "Analyze the full policy");
+    const button = element("button", "deepen", deepenLabel || t("ui.analyze_policy"));
     button.type = "button";
     button.addEventListener("click", () => onDeepen(button));
     foot.append(button);
   }
 
   if (onDismissSite) {
-    const muteLink = element("button", "mute-link", "Don't show again on this site");
+    const muteLink = element("button", "mute-link", t("ui.dont_show_again_site"));
     muteLink.type = "button";
     muteLink.addEventListener("click", () => {
       onDismissSite();

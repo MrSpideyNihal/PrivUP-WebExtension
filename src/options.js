@@ -5,7 +5,7 @@
  */
 
 import { getSettings, saveSettings, clearCache, getCacheStats, clearDismissedSites } from "./settings.js";
-import { availableTagSets } from "./core/main.js";
+import { availableTagSets, describeLanguages, isLanguage, message } from "./core/main.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -59,6 +59,30 @@ async function init() {
   $("autoPanel").value = settings.autoPanel;
   $("autoPanel").addEventListener("change", (e) => {
     save({ autoPanel: e.target.value });
+  });
+
+  // Language dropdown, populated from the shipped catalogs. Each language is
+  // shown in its own script, since that is how its speakers will look for it.
+  const languageSelect = $("language");
+  for (const lang of describeLanguages()) {
+    const option = document.createElement("option");
+    option.value = lang.code;
+    option.textContent = lang.nativeName === lang.name
+      ? lang.name
+      : `${lang.nativeName} (${lang.name})`;
+    languageSelect.append(option);
+  }
+  const showReviewStatus = (code) => {
+    const lang = describeLanguages().find((l) => l.code === code);
+    $("languageDesc").textContent = lang && !lang.reviewed
+      ? message(code, "ui.unreviewed")
+      : "Translated on this device. Quotes from a policy stay in the language it was written in.";
+  };
+  languageSelect.value = isLanguage(settings.language) ? settings.language : "en";
+  showReviewStatus(languageSelect.value);
+  languageSelect.addEventListener("change", (e) => {
+    showReviewStatus(e.target.value);
+    save({ language: e.target.value });
   });
 
   // Tag set dropdown — populate from the core module

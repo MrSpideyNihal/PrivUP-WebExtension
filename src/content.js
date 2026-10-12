@@ -16,7 +16,8 @@
  * already on.
  */
 
-import { availableTagSets, run, runOnClauses } from "./core/main.js";
+import { availableTagSets, isLanguage, message, run, runOnClauses } from "./core/main.js";
+import { getSettings } from "./settings.js";
 import { clausesFromDom, findPolicyLink, looksLikeBanner } from "./dom.js";
 import { removePanel, renderPanel } from "./panel.js";
 import { isSpaShell, recoverContent } from "./core/spa.js";
@@ -41,22 +42,48 @@ function stripNoise(html) {
 
 const state = {
   tagSet: DEFAULT_TAG_SET,
+  language: "en",
   banner: null,
   policyLink: null,
   source: "banner",
   shown: false,
 };
 
+/* ---------- language ---------- */
+
+/* The language setting is read from storage rather than passed in, so a
+ * change on the options page applies to the next verdict on every open tab. */
+async function refreshLanguage() {
+  try {
+    const settings = await getSettings();
+    state.language = isLanguage(settings.language) ? settings.language : "en";
+  } catch {
+    state.language = "en";
+  }
+}
+
+function t(key, values) {
+  return message(state.language, key, values);
+}
+
+globalThis.chrome?.storage?.onChanged?.addListener(() => {
+  refreshLanguage();
+});
+
 /* ---------- analysis ---------- */
 
 function analyzeBanner() {
   const clauses = clausesFromDom(state.banner);
-  return runOnClauses({ clauses, tagSet: state.tagSet, origin: location.href });
+  return runOnClauses({
+    clauses, tagSet: state.tagSet, origin: location.href, language: state.language,
+  });
 }
 
 function analyzeWholePage() {
   const clauses = clausesFromDom(document.body);
-  return runOnClauses({ clauses, tagSet: state.tagSet, origin: location.href });
+  return runOnClauses({
+    clauses, tagSet: state.tagSet, origin: location.href, language: state.language,
+  });
 }
 
 function analyzeText(text) {
@@ -65,6 +92,7 @@ function analyzeText(text) {
     tagSet: state.tagSet,
     origin: state.policyLink ? state.policyLink.url : location.href,
     contentType: "text/html",
+    language: state.language,
   });
 }
 
@@ -76,7 +104,7 @@ async function deepen(button) {
   if (!link) return;
 
   button.disabled = true;
-  button.textContent = "Reading the policy";
+  button.textContent = t("ui.reading_policy");
   try {
     const response = await fetch(link.url, { credentials: "omit", redirect: "follow" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -95,7 +123,7 @@ async function deepen(button) {
     show(analyzeText(textToAnalyze));
   } catch (error) {
     button.disabled = false;
-    button.textContent = "Could not read it. Try again";
+    button.textContent = t("ui.read_failed");
   }
 }
 
@@ -128,10 +156,11 @@ function show(verdict, settings = state.settings) {
     tagSets: availableTagSets(),
     onTagSet: switchTagSet,
     onDeepen: state.policyLink && state.source !== "policy" ? deepen : null,
-    deepenLabel: state.policyLink ? "Analyze the full privacy policy" : null,
+    deepenLabel: state.policyLink ? t("ui.analyze_privacy_policy") : null,
     popupStyle: settings?.popupStyle || "top-banner",
     onDismissSite: dismissThisSite,
     sourceUrl,
+    language: state.language,
   });
 
   // Notify the worker so it can set the badge even for banner-triggered verdicts.
@@ -406,7 +435,9 @@ async function detectPolicyLink() {
 
 /* ---------- startup ---------- */
 
-function start() {
+async function start() {
+  await refreshLanguage();
+
   // Existing: scan for consent banners in the initial DOM.
   scan(document.body);
   observer.observe(document.body, { childList: true, subtree: true });
@@ -433,6 +464,11 @@ chrome.runtime?.onMessage?.addListener((message, _sender, respond) => {
 
   removePanel();
 
+  refreshLanguage().then(() => analyzeOnClick(respond));
+  return true;
+});
+
+function analyzeOnClick(respond) {
   // Use fetchPolicyOrPage so toolbar clicks on homepages get the real
   // policy verdict, not a DOM scrape of marketing copy.
   if (state.policyLink) {
@@ -452,8 +488,7 @@ chrome.runtime?.onMessage?.addListener((message, _sender, respond) => {
     show(verdict);
     respond?.({ decision: verdict.decision, findings: verdict.findings.length });
   }
-  return true;
-});
+}
 
 
 /* Dev-harness hook, present only when this is not running as an extension.
