@@ -1,0 +1,37 @@
+<!doctype html>
+<!--
+  A privacy policy that only exists after JavaScript runs, for exercising
+  src/reader.js in a real browser. Shaped like KreditBee's: the menu renders
+  at once, the policy arrives 1.5 seconds later, and a plain fetch of this
+  file sees neither.
+
+  From the harness page's console:
+    const { readPolicy } = await import("/src/reader.js");
+    await readPolicy("/dev/spa-policy.html");
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lender privacy policy (rendered by script)</title>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const root = document.getElementById("root");
+root.innerHTML = '<nav><a href="/">Home</a> <a href="/loans">Loans</a></nav>';
+setTimeout(() => {
+  const sentences = [
+    "We collect your name, phone number and address when you apply for a loan.",
+    "We access your contact list to assess your creditworthiness.",
+    "We share your information with our lending partners and credit bureaus.",
+    "We retain your data for as long as necessary to provide our services.",
+    "Your data may be transferred to servers located outside India.",
+    "We use cookies to understand how you use our website.",
+  ];
+  const main = document.createElement("main");
+  main.innerHTML = "<h1>Privacy Policy</h1>" + sentences.map((s) => `<p>${s}</p>`).join("");
+  root.append(main);
+}, 1500);
+</script>
+</body>
+</html>
