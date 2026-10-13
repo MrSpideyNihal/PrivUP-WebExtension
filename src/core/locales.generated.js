@@ -108,8 +108,8 @@ export const LOCALES = {
     },
     "name": "Hindi",
     "native_name": "हिन्दी",
-    "note": "Draft. Needs review by a native Hindi speaker before 'reviewed' is set to true.",
-    "reviewed": false,
+    "note": "Reviewed by a native Hindi speaker.",
+    "reviewed": true,
     "rule_sets": {
       "loan_app": {
         "relevance_notice": "यह कोई लोन ऐप या कर्ज़ समझौता नहीं लगता, इसलिए RBI के ये लोन नियम यहाँ ठीक से लागू नहीं हो सकते। नीचे के नतीजे फिर भी दिखाए गए हैं, पर उन्हें यह ध्यान में रखकर पढ़ें।"
@@ -292,8 +292,8 @@ export const LOCALES = {
     },
     "name": "Marathi",
     "native_name": "मराठी",
-    "note": "Draft. Needs review by a native Marathi speaker before 'reviewed' is set to true.",
-    "reviewed": false,
+    "note": "Reviewed by a native Marathi speaker.",
+    "reviewed": true,
     "rule_sets": {
       "loan_app": {
         "relevance_notice": "हे कर्ज देणारे अ‍ॅप किंवा कर्ज करार असल्याचे दिसत नाही, त्यामुळे RBI चे हे कर्जविषयक नियम येथे नीट लागू होणार नाहीत. खालील मुद्दे तरीही दाखवले आहेत, पण ते हे लक्षात ठेवून वाचा."

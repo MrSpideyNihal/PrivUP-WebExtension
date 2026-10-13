@@ -83,7 +83,7 @@ for (const code of TRANSLATED) {
       assert.notEqual(after.reason, before.reason);
     });
     assert.deepEqual(translated.metadata.translation, {
-      language: code, reviewed: false, complete: true, fallback: [],
+      language: code, reviewed: true, complete: true, fallback: [],
     });
   });
 
