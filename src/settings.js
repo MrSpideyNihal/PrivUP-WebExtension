@@ -22,6 +22,7 @@ export const DEFAULTS = Object.freeze({
   popupFrequency: "first-visit", // "first-visit" (once per site) | "every-visit"
   cacheTtlHours: 24,             // re-analyze a site after this many hours
   tagSet: "generic",             // remembered default rule set
+  language: "en",                // language verdicts are shown in, see core/translator.js
   dismissedSites: {},            // { [origin]: timestamp } sites where user chose "don't show again"
 });
 

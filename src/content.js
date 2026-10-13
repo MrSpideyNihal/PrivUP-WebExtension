@@ -16,7 +16,8 @@
  * already on.
  */
 
-import { availableTagSets, runOnClauses } from "./core/main.js";
+import { availableTagSets, isLanguage, message, runOnClauses } from "./core/main.js";
+import { getSettings } from "./settings.js";
 import { clausesFromDom, findPolicyLink, looksLikeBanner, readableClausesFromDom } from "./dom.js";
 import { removePanel, renderPanel } from "./panel.js";
 import { readPolicy } from "./reader.js";
@@ -25,6 +26,7 @@ const DEFAULT_TAG_SET = "generic";
 const SETTLE_MS = 350;
 const state = {
   tagSet: DEFAULT_TAG_SET,
+  language: "en",
   banner: null,
   policyLink: null,
   source: "banner",
@@ -32,41 +34,68 @@ const state = {
   shown: false,
 };
 
+/* ---------- language ---------- */
+
+/* The language setting is read from storage rather than passed in, so a
+ * change on the options page applies to the next verdict on every open tab. */
+async function refreshLanguage() {
+  try {
+    const settings = await getSettings();
+    state.language = isLanguage(settings.language) ? settings.language : "en";
+  } catch {
+    state.language = "en";
+  }
+}
+
+function t(key, values) {
+  return message(state.language, key, values);
+}
+
+globalThis.chrome?.storage?.onChanged?.addListener(() => {
+  refreshLanguage();
+});
+
 /* ---------- analysis ---------- */
 
 function analyzeBanner() {
   const clauses = clausesFromDom(state.banner);
-  return runOnClauses({ clauses, tagSet: state.tagSet, origin: location.href });
+  return runOnClauses({
+    clauses, tagSet: state.tagSet, origin: location.href, language: state.language,
+  });
 }
 
 function analyzeWholePage() {
   // Visible text first; hidden text too if that is not enough, for policies
   // kept in collapsed sections.
   const clauses = readableClausesFromDom(document.body);
-  return runOnClauses({ clauses, tagSet: state.tagSet, origin: location.href });
+  return runOnClauses({
+    clauses, tagSet: state.tagSet, origin: location.href, language: state.language,
+  });
 }
 
 function analyzePolicy(result) {
   state.source = "policy";
   state.policyUrl = result.url;
-  return runOnClauses({ clauses: result.clauses, tagSet: state.tagSet, origin: result.url });
+  return runOnClauses({
+    clauses: result.clauses, tagSet: state.tagSet, origin: result.url, language: state.language,
+  });
 }
 
 const log = (...parts) => console.log("[PrivUp]", ...parts);
 
-/* Fetch the linked policy and analyze it. Only on a click, only same-origin,
- * and it sends nothing: it is a plain GET for a public document on the site
- * the user is already reading. */
+/* Read the linked policy and analyze it, after a click. reader.js decides how;
+ * no request carries cookies except a same-origin frame of the site the user
+ * is already on. */
 async function deepen(button) {
   const link = state.policyLink;
   if (!link) return;
 
   button.disabled = true;
-  button.textContent = "Reading the policy";
+  button.textContent = t("ui.reading_policy");
   const result = await readPolicy(link.url, { log, userAsked: true });
   if (result.unreadable) {
     button.disabled = false;
-    button.textContent = "Could not read it. Try again";
+    button.textContent = t("ui.read_failed");
     return;
   }
   show(analyzePolicy(result));
@@ -101,10 +130,11 @@ function show(verdict, settings = state.settings) {
     tagSets: availableTagSets(),
     onTagSet: switchTagSet,
     onDeepen: state.policyLink && state.source !== "policy" ? deepen : null,
-    deepenLabel: state.policyLink ? "Analyze the full privacy policy" : null,
+    deepenLabel: state.policyLink ? t("ui.analyze_privacy_policy") : null,
     popupStyle: settings?.popupStyle || "top-banner",
     onDismissSite: dismissThisSite,
     sourceUrl,
+    language: state.language,
   });
 
   // Notify the worker so it can set the badge even for banner-triggered verdicts.
@@ -336,7 +366,9 @@ async function detectPolicyLink() {
 
 /* ---------- startup ---------- */
 
-function start() {
+async function start() {
+  await refreshLanguage();
+
   // Existing: scan for consent banners in the initial DOM.
   scan(document.body);
   observer.observe(document.body, { childList: true, subtree: true });
@@ -364,6 +396,11 @@ chrome.runtime?.onMessage?.addListener((message, _sender, respond) => {
 
   removePanel();
 
+  refreshLanguage().then(() => analyzeOnClick(respond));
+  return true;
+});
+
+function analyzeOnClick(respond) {
   // Use fetchPolicyOrPage so toolbar clicks on homepages get the real
   // policy verdict, not a DOM scrape of marketing copy.
   if (state.policyLink) {
@@ -383,8 +420,7 @@ chrome.runtime?.onMessage?.addListener((message, _sender, respond) => {
     show(verdict);
     respond?.({ decision: verdict.decision, findings: verdict.findings.length });
   }
-  return true;
-});
+}
 
 
 /* Dev-harness hook, present only when this is not running as an extension.

@@ -1,6 +1,6 @@
 /* Pipeline orchestration. Mirror of core/main.py.
  *
- *   text -> summarizer.clean() -> analyzer.classify() -> scorer.score()
+ *   text -> summarizer.clean() -> analyzer.classify() -> scorer.score() -> translator.translate()
  *
  * There is no driver stage here. A content script already has the page, and
  * the extension makes no network request of its own: that is the whole
@@ -12,15 +12,28 @@ import { classify } from "./analyzer.js";
 import { clean } from "./summarizer.js";
 import { driverResult } from "./models.js";
 import { score } from "./scorer.js";
+import { SOURCE_LANGUAGE, translate } from "./translator.js";
 
 export { availableTagSets, describeTagSets } from "./tags.js";
 export { verdictToDict } from "./models.js";
+export { describeLanguages, isLanguage, message, SOURCE_LANGUAGE } from "./translator.js";
+
+/* Translation runs last, so it cannot change the decision. */
+function inLanguage(verdict, language) {
+  return language && language !== SOURCE_LANGUAGE ? translate(verdict, language) : verdict;
+}
 
 /* Analyze text against a rule set.
  *
  * `contentType` decides whether markup is stripped, exactly as in Python:
  * "text/html" for a serialised page, "text/plain" for prose. */
-export function run({ text, tagSet, origin = "page", contentType = "text/plain" }) {
+export function run({
+  text,
+  tagSet,
+  origin = "page",
+  contentType = "text/plain",
+  language = SOURCE_LANGUAGE,
+}) {
   const ruleSet = getTagSet(tagSet);
   const result = driverResult({ rawText: text, origin, driver: "page", contentType });
 
@@ -39,12 +52,12 @@ export function run({ text, tagSet, origin = "page", contentType = "text/plain" 
     verdict.metadata = { ...verdict.metadata, relevance: relevanceToDict(relevance) };
   }
 
-  return verdict;
+  return inLanguage(verdict, language);
 }
 
 /* Analyze already-segmented clauses. Used by the live DOM path, which walks
  * the real document rather than re-parsing serialised HTML. */
-export function runOnClauses({ clauses, tagSet, origin = "page" }) {
+export function runOnClauses({ clauses, tagSet, origin = "page", language = SOURCE_LANGUAGE }) {
   const ruleSet = getTagSet(tagSet);
   const findings = classify(clauses, ruleSet, origin);
   const verdict = score(findings, {
@@ -57,5 +70,5 @@ export function runOnClauses({ clauses, tagSet, origin = "page" }) {
   if (!relevance.applies) {
     verdict.metadata = { ...verdict.metadata, relevance: relevanceToDict(relevance) };
   }
-  return verdict;
+  return inLanguage(verdict, language);
 }

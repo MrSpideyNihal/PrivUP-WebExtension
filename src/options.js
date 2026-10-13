@@ -5,11 +5,32 @@
  */
 
 import { getSettings, saveSettings, clearCache, getCacheStats, clearDismissedSites } from "./settings.js";
-import { availableTagSets } from "./core/main.js";
+import { availableTagSets, describeLanguages, isLanguage, message } from "./core/main.js";
 
 const $ = (id) => document.getElementById(id);
 
 let flashTimer = null;
+
+/* Put the whole page in `code`. Every fixed string is tagged in options.html
+ * with its catalog key, so this page holds no translations of its own. */
+function applyLanguage(code) {
+  document.documentElement.lang = code;
+  for (const el of document.querySelectorAll("[data-i18n]")) {
+    el.textContent = message(code, el.dataset.i18n);
+  }
+  // "{n} sites remembered": the count is a live element, so the sentence is
+  // rebuilt around it rather than replaced, wherever the language puts {n}.
+  for (const el of document.querySelectorAll("[data-i18n-count]")) {
+    const count = el.querySelector("strong");
+    const [before, after = ""] = message(code, el.dataset.i18nCount).split("{n}");
+    el.replaceChildren(before, count, after);
+  }
+  const lang = describeLanguages().find((l) => l.code === code);
+  const desc = message(code, "options.language.desc");
+  $("languageDesc").textContent = lang && !lang.reviewed
+    ? `${desc} ${message(code, "ui.unreviewed")}`
+    : desc;
+}
 
 function flash() {
   const el = $("saved");
@@ -59,6 +80,24 @@ async function init() {
   $("autoPanel").value = settings.autoPanel;
   $("autoPanel").addEventListener("change", (e) => {
     save({ autoPanel: e.target.value });
+  });
+
+  // Language dropdown, populated from the shipped catalogs. Each language is
+  // shown in its own script, since that is how its speakers will look for it.
+  const languageSelect = $("language");
+  for (const lang of describeLanguages()) {
+    const option = document.createElement("option");
+    option.value = lang.code;
+    option.textContent = lang.nativeName === lang.name
+      ? lang.name
+      : `${lang.nativeName} (${lang.name})`;
+    languageSelect.append(option);
+  }
+  languageSelect.value = isLanguage(settings.language) ? settings.language : "en";
+  applyLanguage(languageSelect.value);
+  languageSelect.addEventListener("change", (e) => {
+    applyLanguage(e.target.value);
+    save({ language: e.target.value });
   });
 
   // Tag set dropdown — populate from the core module
