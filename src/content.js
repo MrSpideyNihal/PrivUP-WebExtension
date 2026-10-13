@@ -16,34 +16,19 @@
  * already on.
  */
 
-import { availableTagSets, run, runOnClauses } from "./core/main.js";
-import { clausesFromDom, findPolicyLink, looksLikeBanner } from "./dom.js";
+import { availableTagSets, runOnClauses } from "./core/main.js";
+import { clausesFromDom, findPolicyLink, looksLikeBanner, readableClausesFromDom } from "./dom.js";
 import { removePanel, renderPanel } from "./panel.js";
-import { isSpaShell, recoverContent } from "./core/spa.js";
+import { readPolicy } from "./reader.js";
 
 const DEFAULT_TAG_SET = "generic";
 const SETTLE_MS = 350;
-const MAX_DOCUMENT_CHARS = 800_000;
-
-/* Strip script, style, noscript, svg, and large data-* attributes from raw
- * HTML before applying the size limit. Sites like bajajfinserv.in ship 900k+
- * of HTML where 700k is inline scripts, JSON config blobs, and SVG icons —
- * the actual policy text lives past the old 400k cutoff and was silently
- * discarded. Stripping noise first ensures the real content survives. */
-function stripNoise(html) {
-  return html
-    .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
-    .replace(/<noscript\b[\s\S]*?<\/noscript>/gi, " ")
-    .replace(/<svg\b[\s\S]*?<\/svg>/gi, " ")
-    .replace(/\sdata-[a-z-]+="[^"]{200,}"/gi, " ");
-}
-
 const state = {
   tagSet: DEFAULT_TAG_SET,
   banner: null,
   policyLink: null,
   source: "banner",
+  policyUrl: null, // the page actually read, which may be a sub-page of the link
   shown: false,
 };
 
@@ -55,18 +40,19 @@ function analyzeBanner() {
 }
 
 function analyzeWholePage() {
-  const clauses = clausesFromDom(document.body);
+  // Visible text first; hidden text too if that is not enough, for policies
+  // kept in collapsed sections.
+  const clauses = readableClausesFromDom(document.body);
   return runOnClauses({ clauses, tagSet: state.tagSet, origin: location.href });
 }
 
-function analyzeText(text) {
-  return run({
-    text,
-    tagSet: state.tagSet,
-    origin: state.policyLink ? state.policyLink.url : location.href,
-    contentType: "text/html",
-  });
+function analyzePolicy(result) {
+  state.source = "policy";
+  state.policyUrl = result.url;
+  return runOnClauses({ clauses: result.clauses, tagSet: state.tagSet, origin: result.url });
 }
+
+const log = (...parts) => console.log("[PrivUp]", ...parts);
 
 /* Fetch the linked policy and analyze it. Only on a click, only same-origin,
  * and it sends nothing: it is a plain GET for a public document on the site
@@ -77,26 +63,13 @@ async function deepen(button) {
 
   button.disabled = true;
   button.textContent = "Reading the policy";
-  try {
-    const response = await fetch(link.url, { credentials: "omit", redirect: "follow" });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const rawHtml = await response.text();
-    let textToAnalyze = stripNoise(rawHtml).slice(0, MAX_DOCUMENT_CHARS);
-    const wordCount = visibleWordCount(textToAnalyze);
-
-    if (wordCount < SPA_SHELL_THRESHOLD || isSpaShell(rawHtml)) {
-      const recovery = await recoverContent(rawHtml, { url: link.url, enableWayback: false });
-      if (recovery.recovered && recovery.text) {
-        textToAnalyze = recovery.text.slice(0, MAX_DOCUMENT_CHARS);
-      }
-    }
-
-    state.source = "policy";
-    show(analyzeText(textToAnalyze));
-  } catch (error) {
+  const result = await readPolicy(link.url, { log, userAsked: true });
+  if (result.unreadable) {
     button.disabled = false;
     button.textContent = "Could not read it. Try again";
+    return;
   }
+  show(analyzePolicy(result));
 }
 
 /* ---------- rendering ---------- */
@@ -119,7 +92,7 @@ function show(verdict, settings = state.settings) {
   // Show the URL of the document that was actually analyzed.
   // Only shown when it differs from the current page (i.e. a fetched policy).
   const sourceUrl = state.source === "policy" && state.policyLink
-    ? state.policyLink.url
+    ? state.policyUrl || state.policyLink.url
     : null;
 
   renderPanel({
@@ -242,21 +215,6 @@ function showProactive(verdict, settings) {
 }
 
 
-/* Approximate word count of visible text in a raw HTML string.
- * Strips tags with a simple regex — accurate enough for the SPA-shell check. */
-function visibleWordCount(html) {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<[^>]+>/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 0).length;
-}
-
-/* Minimum visible words before we treat a fetched HTML as real content
- * rather than a JS shell (e.g. <div id="root"></div>). */
-const SPA_SHELL_THRESHOLD = 120;
-
 /* Synthesize a verdict that carries only a metadata flag, for failure modes
  * where we couldn't read the policy at all. These are NOT "allow" — they are
  * "we don't know", and the UI must make that visually distinct from a real
@@ -272,61 +230,33 @@ function unreadableVerdict(flag, origin) {
   };
 }
 
-/* Fetch and analyze the linked policy URL when it's a different page from the
- * current one (e.g. we're on the homepage but the policy is at /legal/terms).
+/* Analyze the linked policy when it is a different page from this one (we
+ * are on the homepage, the policy is at /legal/privacy), or the live page
+ * when it is this one, since the browser has already rendered it.
  *
- * Handles three failure modes distinctly:
- *   spa_shell: fetch returned HTML but it's an unrecoverable JS-rendered shell
- *   fetch_failed: network error or non-OK HTTP response
- *   empty_document: HTML had text but no clauses survived segmentation
- *
- * Falls back to the live DOM when the policy link is this very page
- * (already JS-rendered by the browser). */
-async function fetchPolicyOrPage(link) {
-  let linkPathname;
-  try { linkPathname = new URL(link.url).pathname; } catch (_) { linkPathname = null; }
-  const currentPathname = location.pathname;
-
-  // If the policy link points to a DIFFERENT page, fetch it.
-  if (linkPathname && linkPathname !== currentPathname) {
-    let rawHtml;
-    try {
-      console.log("[PrivUp] fetching linked policy:", link.url);
-      const res = await fetch(link.url, { credentials: "omit", redirect: "follow" });
-      if (!res.ok) {
-        console.log("[PrivUp] policy fetch HTTP error:", res.status);
-        return unreadableVerdict("fetch_failed", link.url);
-      }
-      rawHtml = await res.text();
-    } catch (err) {
-      console.log("[PrivUp] policy fetch network error:", err.message);
-      return unreadableVerdict("fetch_failed", link.url);
-    }
-
-    let textToAnalyze = stripNoise(rawHtml).slice(0, MAX_DOCUMENT_CHARS);
-    const wordCount = visibleWordCount(textToAnalyze);
-    console.log("[PrivUp] fetched policy visible words:", wordCount);
-
-    if (wordCount < SPA_SHELL_THRESHOLD || isSpaShell(rawHtml)) {
-      console.log("[PrivUp] SPA shell detected, attempting zero-dependency recovery...");
-      const recovery = await recoverContent(rawHtml, { url: link.url, enableWayback: false });
-      if (recovery.recovered && recovery.text) {
-        console.log("[PrivUp] Recovered SPA content via:", recovery.method);
-        textToAnalyze = recovery.text.slice(0, MAX_DOCUMENT_CHARS);
-      } else if (wordCount < SPA_SHELL_THRESHOLD) {
-        console.log("[PrivUp] SPA shell could not be recovered");
-        return unreadableVerdict("spa_shell", link.url);
-      }
-    }
-
-    state.source = "policy";
-    const verdict = analyzeText(textToAnalyze);
-    console.log("[PrivUp] fetched policy verdict:", verdict.decision,
-      "score:", verdict.riskScore, "findings:", verdict.findings.length);
-    return verdict;
+ * reader.js tries everything it can before giving up, and says why when it
+ * does: fetch_failed, spa_shell or empty_document. Those are "we don't
+ * know", never "allow", and the panel shows them that way. */
+async function fetchPolicyOrPage(link, { userAsked = false } = {}) {
+  let target = null;
+  try {
+    const url = new URL(link.url);
+    target = url.origin + url.pathname;
+  } catch (_) {
+    target = null;
   }
 
-  // Already on the policy page: use the live JS-rendered DOM.
+  if (target && target !== location.origin + location.pathname) {
+    log("reading linked policy:", link.url);
+    const result = await readPolicy(link.url, { log, userAsked });
+    if (result.unreadable) {
+      log("could not read policy:", result.unreadable);
+      return unreadableVerdict(result.unreadable, link.url);
+    }
+    log("read policy via", result.method, "from", result.url, "clauses:", result.clauses.length);
+    return analyzePolicy(result);
+  }
+
   state.source = "page";
   return analyzeWholePage();
 }
@@ -430,13 +360,14 @@ chrome.runtime?.onMessage?.addListener((message, _sender, respond) => {
   state.tagSet = message.tagSet || state.tagSet;
   state.banner = document.body;
   state.policyLink = findPolicyLink(document.body, location.origin);
+  state.policyUrl = null;
 
   removePanel();
 
   // Use fetchPolicyOrPage so toolbar clicks on homepages get the real
   // policy verdict, not a DOM scrape of marketing copy.
   if (state.policyLink) {
-    fetchPolicyOrPage(state.policyLink).then((verdict) => {
+    fetchPolicyOrPage(state.policyLink, { userAsked: true }).then((verdict) => {
       show(verdict);
       respond?.({ decision: verdict.decision, findings: verdict.findings.length });
     }).catch(() => {

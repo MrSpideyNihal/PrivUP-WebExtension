@@ -18,6 +18,10 @@ import { looksLikeHeading, normalizeText, segment } from "./core/summarizer.js";
 const ELEMENT_NODE = 1;
 const TEXT_NODE = 3;
 
+/* Fewer clauses than this from what is visible, and hidden content is read
+ * too. Matches MIN_READABLE_CLAUSES in reader.js. */
+const MIN_VISIBLE_CLAUSES = 5;
+
 const DROP_TAGS = new Set([
   "SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "SVG", "CANVAS", "IFRAME",
   "OBJECT", "EMBED", "SELECT", "BUTTON", "TEXTAREA", "INPUT", "HEAD",
@@ -43,8 +47,14 @@ function isHidden(element) {
   return style.display === "none" || style.visibility === "hidden" || style.opacity === "0";
 }
 
-/* Collect block-level text from a DOM subtree. */
-export function blocksFromDom(root) {
+/* Collect block-level text from a DOM subtree.
+ *
+ * `includeHidden` reads elements that are present but not displayed. Off by
+ * default, because hidden text is usually a closed menu. It is the fallback
+ * for policies that keep every section in a collapsed accordion, or fade the
+ * whole page in from opacity 0, where reading only what is visible reads
+ * nothing at all. */
+export function blocksFromDom(root, { includeHidden = false } = {}) {
   const blocks = [];
   let buffer = [];
   let bufferIsHeading = false;
@@ -70,8 +80,10 @@ export function blocksFromDom(root) {
 
     const tag = node.tagName;
     if (DROP_TAGS.has(tag) || CHROME_TAGS.has(tag)) return;
-    if (node.getAttribute("aria-hidden") === "true") return;
-    if (isHidden(node)) return;
+    if (!includeHidden) {
+      if (node.getAttribute("aria-hidden") === "true") return;
+      if (isHidden(node)) return;
+    }
 
     const isBlock = BLOCK_TAGS.has(tag) || HEADING_TAGS.has(tag);
     const isStructural = isBlock && !CELL_TAGS.has(tag)
@@ -82,6 +94,11 @@ export function blocksFromDom(root) {
       if (HEADING_TAGS.has(tag)) bufferIsHeading = true;
     }
 
+    // Web components render into a shadow root, which childNodes does not
+    // include. Open roots are readable; closed ones are not, by design.
+    if (node.shadowRoot) {
+      for (const child of node.shadowRoot.childNodes) walk(child);
+    }
     for (const child of node.childNodes) walk(child);
 
     if (CELL_TAGS.has(tag)) buffer.push(CELL_SEPARATOR);
@@ -100,8 +117,17 @@ export function blocksFromDom(root) {
   }));
 }
 
-export function clausesFromDom(root) {
-  return segment(blocksFromDom(root));
+export function clausesFromDom(root, options) {
+  return segment(blocksFromDom(root, options));
+}
+
+/* Visible text first; hidden text too only when the visible text is not
+ * enough to be a policy. */
+export function readableClausesFromDom(root) {
+  const visible = clausesFromDom(root);
+  if (visible.length >= MIN_VISIBLE_CLAUSES) return visible;
+  const everything = clausesFromDom(root, { includeHidden: true });
+  return everything.length > visible.length ? everything : visible;
 }
 
 /* ---------- consent banner detection ---------- */
