@@ -236,9 +236,52 @@ export function looksLikeBanner(element) {
 }
 
 /* Find a policy link inside a banner, or on the page. Returned for the user
- * to act on; nothing is fetched without a click. */
-const POLICY_HREF = /privacy|data-protection|cookie-?policy|legal|terms/i;
-const POLICY_TEXT = /privacy (?:policy|notice|statement)|cookie policy|data protection|terms/i;
+ * to act on; nothing is fetched without a click.
+ *
+ * Scored mostly on the link text, because that is what the site wrote for a
+ * person: real footers say "Privacy and Cookies" and point at a redirector
+ * like go.microsoft.com/fwlink/?linkid=521839, whose path says nothing. The
+ * path is supporting evidence, and pages that are about privacy without
+ * being the policy (California opt-out forms, cookie settings) are pushed
+ * down hard, since they hold no policy text at all. */
+const PRIVACY_LABEL =
+  /privacy (?:policy|notice|statement|and cookies|& cookies|cent(?:er|re))|data (?:protection|privacy) (?:policy|notice)/i;
+const BARE_PRIVACY_LABEL = /\bprivacy\b/i;
+const COOKIE_LABEL = /cookie (?:policy|notice)/i;
+const TERMS_LABEL = /terms|conditions|\beula\b|legal/i;
+
+const PRIVACY_PATH = /privacy|privacystatement/i;
+const SUPPORTING_PATH = /data-protection|cookie-?policy|legal|terms|eula/i;
+
+// Pages about privacy that are not a policy.
+const NOT_A_POLICY = /choices|do[- ]?not[- ]?sell|opt[- ]?out|preferences|settings|california|ccpa|manage|request|dashboard|consent[- ]?form/i;
+
+// Same site, not same origin: www.minecraft.net and minecraft.net are one
+// site, and so are help.netflix.com and www.netflix.com.
+function siteOf(hostname) {
+  const parts = hostname.replace(/^www\./, "").split(".");
+  // co.in, gov.in, com.au and the like: keep three labels.
+  const keep = parts.length > 2 && parts[parts.length - 2].length <= 3 ? 3 : 2;
+  return parts.slice(-keep).join(".");
+}
+
+export function scorePolicyLink(url, label, pageOrigin) {
+  let score = 0;
+  if (PRIVACY_LABEL.test(label)) score += 60;
+  else if (BARE_PRIVACY_LABEL.test(label)) score += 40;
+  else if (COOKIE_LABEL.test(label)) score += 35;
+  else if (TERMS_LABEL.test(label)) score += 25;
+
+  if (PRIVACY_PATH.test(url.pathname)) score += 40;
+  else if (SUPPORTING_PATH.test(url.pathname)) score += 10;
+
+  if (NOT_A_POLICY.test(label) || NOT_A_POLICY.test(url.pathname)) score -= 80;
+
+  let pageHost = "";
+  try { pageHost = new URL(pageOrigin).hostname; } catch { /* keep empty */ }
+  if (siteOf(url.hostname) !== siteOf(pageHost)) score -= 20;
+  return score;
+}
 
 export function findPolicyLink(root, pageOrigin) {
   const anchors = [...root.querySelectorAll("a[href]")];
@@ -254,11 +297,7 @@ export function findPolicyLink(root, pageOrigin) {
     if (url.protocol !== "http:" && url.protocol !== "https:") continue;
 
     const label = (anchor.textContent || "").trim();
-    let score = 0;
-    if (POLICY_HREF.test(url.pathname)) score += 60;
-    if (POLICY_TEXT.test(label)) score += 50;
-    if (/privacy/i.test(url.pathname)) score += 20;
-    if (url.origin !== pageOrigin) score -= 40;
+    const score = scorePolicyLink(url, label, pageOrigin);
     if (score > 0) scored.push({ url: url.href, label: label || url.href, score });
   }
 
