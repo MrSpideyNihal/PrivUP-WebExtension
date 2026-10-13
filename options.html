@@ -230,17 +230,17 @@
       <div class="mark"></div>
       <div>
         <h1>PrivUp</h1>
-        <div class="subtitle">Settings</div>
+        <div class="subtitle" data-i18n="options.subtitle">Settings</div>
       </div>
     </div>
 
     <div class="card">
-      <h2>Detection & Auto-Scan</h2>
+      <h2 data-i18n="options.detection">Detection & Auto-Scan</h2>
 
       <div class="field">
         <div class="field-label">
-          <div class="name">Auto-detect policy links</div>
-          <div class="desc">Scan every page for a privacy policy link and quietly analyze it</div>
+          <div class="name" data-i18n="options.auto_detect">Auto-detect policy links</div>
+          <div class="desc" data-i18n="options.auto_detect.desc">Scan every page for a privacy policy link and quietly analyze it</div>
         </div>
         <label class="toggle">
           <input type="checkbox" id="autoDetect">
@@ -250,51 +250,51 @@
     </div>
 
     <div class="card">
-      <h2>Popup & Notifications</h2>
+      <h2 data-i18n="options.popup">Popup & Notifications</h2>
 
       <div class="field">
         <div class="field-label">
-          <div class="name">Popup position & style</div>
-          <div class="desc">Where and how the warning appears on websites</div>
+          <div class="name" data-i18n="options.popup_style">Popup position & style</div>
+          <div class="desc" data-i18n="options.popup_style.desc">Where and how the warning appears on websites</div>
         </div>
         <select id="popupStyle">
-          <option value="top-banner">Top Banner (compact bar at top)</option>
-          <option value="bottom-right">Bottom Right (full panel)</option>
-          <option value="top-center">Top Center (full panel)</option>
+          <option value="top-banner" data-i18n="options.popup_style.top_banner">Top Banner (compact bar at top)</option>
+          <option value="bottom-right" data-i18n="options.popup_style.bottom_right">Bottom Right (full panel)</option>
+          <option value="top-center" data-i18n="options.popup_style.top_center">Top Center (full panel)</option>
         </select>
       </div>
 
       <div class="field">
         <div class="field-label">
-          <div class="name">Popup frequency</div>
-          <div class="desc">Prevent annoying popups on repeated visits or page reloads</div>
+          <div class="name" data-i18n="options.frequency">Popup frequency</div>
+          <div class="desc" data-i18n="options.frequency.desc">Prevent annoying popups on repeated visits or page reloads</div>
         </div>
         <select id="popupFrequency">
-          <option value="first-visit">Only on first visit to a site</option>
-          <option value="every-visit">Every visit (if risk threshold met)</option>
+          <option value="first-visit" data-i18n="options.frequency.first_visit">Only on first visit to a site</option>
+          <option value="every-visit" data-i18n="options.frequency.every_visit">Every visit (if risk threshold met)</option>
         </select>
       </div>
 
       <div class="field">
         <div class="field-label">
-          <div class="name">Auto-show risk threshold</div>
-          <div class="desc">When to pop up automatically without clicking the toolbar icon</div>
+          <div class="name" data-i18n="options.threshold">Auto-show risk threshold</div>
+          <div class="desc" data-i18n="options.threshold.desc">When to pop up automatically without clicking the toolbar icon</div>
         </div>
         <select id="autoPanel">
-          <option value="deny">Only on Deny (high risk)</option>
-          <option value="warning">Deny or Warning</option>
-          <option value="always">Always</option>
-          <option value="never">Never (toolbar badge only)</option>
+          <option value="deny" data-i18n="options.threshold.deny">Only on Deny (high risk)</option>
+          <option value="warning" data-i18n="options.threshold.warning">Deny or Warning</option>
+          <option value="always" data-i18n="options.threshold.always">Always</option>
+          <option value="never" data-i18n="options.threshold.never">Never (toolbar badge only)</option>
         </select>
       </div>
     </div>
 
     <div class="card">
-      <h2>Language</h2>
+      <h2 data-i18n="options.language">Language</h2>
 
       <div class="field">
         <div class="field-label">
-          <div class="name">Show verdicts in</div>
+          <div class="name" data-i18n="options.language.name">Show verdicts in</div>
           <div class="desc" id="languageDesc">Translated on this device. Quotes from a policy stay in the language it was written in.</div>
         </div>
         <select id="language"></select>
@@ -302,54 +302,54 @@
     </div>
 
     <div class="card">
-      <h2>Defaults</h2>
+      <h2 data-i18n="options.defaults">Defaults</h2>
 
       <div class="field">
         <div class="field-label">
-          <div class="name">Default rule set</div>
-          <div class="desc">Used for auto-detection and as the initial choice on toolbar click</div>
+          <div class="name" data-i18n="options.rule_set">Default rule set</div>
+          <div class="desc" data-i18n="options.rule_set.desc">Used for auto-detection and as the initial choice on toolbar click</div>
         </div>
         <select id="tagSet"></select>
       </div>
     </div>
 
     <div class="card">
-      <h2>Cache</h2>
+      <h2 data-i18n="options.cache">Cache</h2>
 
       <div class="field">
         <div class="field-label">
-          <div class="name">Re-analyze after</div>
-          <div class="desc">How long to remember a site's verdict before checking again</div>
+          <div class="name" data-i18n="options.ttl">Re-analyze after</div>
+          <div class="desc" data-i18n="options.ttl.desc">How long to remember a site's verdict before checking again</div>
         </div>
         <select id="cacheTtlHours">
-          <option value="12">12 hours</option>
-          <option value="24">24 hours</option>
-          <option value="168">7 days</option>
+          <option value="12" data-i18n="options.ttl.12">12 hours</option>
+          <option value="24" data-i18n="options.ttl.24">24 hours</option>
+          <option value="168" data-i18n="options.ttl.168">7 days</option>
         </select>
       </div>
 
       <div class="field">
         <div class="field-label">
-          <div class="name">Cached sites</div>
-          <div class="desc cache-count">
+          <div class="name" data-i18n="options.cached">Cached sites</div>
+          <div class="desc cache-count" data-i18n-count="options.cached.count">
             <strong id="cacheCount">0</strong> sites remembered
           </div>
         </div>
-        <button class="btn btn-danger" id="clearCache">Clear all</button>
+        <button class="btn btn-danger" id="clearCache" data-i18n="options.clear_all">Clear all</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>Muted Sites</h2>
+      <h2 data-i18n="options.muted">Muted Sites</h2>
 
       <div class="field">
         <div class="field-label">
-          <div class="name">Dismissed sites</div>
-          <div class="desc cache-count">
+          <div class="name" data-i18n="options.dismissed">Dismissed sites</div>
+          <div class="desc cache-count" data-i18n-count="options.dismissed.count">
             <strong id="dismissedCount">0</strong> sites set to "Don't show again"
           </div>
         </div>
-        <button class="btn btn-danger" id="clearDismissed">Unmute all</button>
+        <button class="btn btn-danger" id="clearDismissed" data-i18n="options.unmute_all">Unmute all</button>
       </div>
     </div>
 
@@ -358,7 +358,7 @@
     </div>
   </div>
 
-  <div class="saved" id="saved">Settings saved</div>
+  <div class="saved" id="saved" data-i18n="options.saved">Settings saved</div>
 
   <script type="module" src="src/options.js"></script>
 </body>

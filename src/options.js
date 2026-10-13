@@ -11,6 +11,27 @@ const $ = (id) => document.getElementById(id);
 
 let flashTimer = null;
 
+/* Put the whole page in `code`. Every fixed string is tagged in options.html
+ * with its catalog key, so this page holds no translations of its own. */
+function applyLanguage(code) {
+  document.documentElement.lang = code;
+  for (const el of document.querySelectorAll("[data-i18n]")) {
+    el.textContent = message(code, el.dataset.i18n);
+  }
+  // "{n} sites remembered": the count is a live element, so the sentence is
+  // rebuilt around it rather than replaced, wherever the language puts {n}.
+  for (const el of document.querySelectorAll("[data-i18n-count]")) {
+    const count = el.querySelector("strong");
+    const [before, after = ""] = message(code, el.dataset.i18nCount).split("{n}");
+    el.replaceChildren(before, count, after);
+  }
+  const lang = describeLanguages().find((l) => l.code === code);
+  const desc = message(code, "options.language.desc");
+  $("languageDesc").textContent = lang && !lang.reviewed
+    ? `${desc} ${message(code, "ui.unreviewed")}`
+    : desc;
+}
+
 function flash() {
   const el = $("saved");
   el.classList.add("visible");
@@ -72,16 +93,10 @@ async function init() {
       : `${lang.nativeName} (${lang.name})`;
     languageSelect.append(option);
   }
-  const showReviewStatus = (code) => {
-    const lang = describeLanguages().find((l) => l.code === code);
-    $("languageDesc").textContent = lang && !lang.reviewed
-      ? message(code, "ui.unreviewed")
-      : "Translated on this device. Quotes from a policy stay in the language it was written in.";
-  };
   languageSelect.value = isLanguage(settings.language) ? settings.language : "en";
-  showReviewStatus(languageSelect.value);
+  applyLanguage(languageSelect.value);
   languageSelect.addEventListener("change", (e) => {
-    showReviewStatus(e.target.value);
+    applyLanguage(e.target.value);
     save({ language: e.target.value });
   });
 

@@ -83,7 +83,7 @@ for (const code of TRANSLATED) {
       assert.notEqual(after.reason, before.reason);
     });
     assert.deepEqual(translated.metadata.translation, {
-      language: code, reviewed: true, complete: true, fallback: [],
+      language: code, reviewed: Boolean(LOCALES[code].reviewed), complete: true, fallback: [],
     });
   });
 
@@ -152,4 +152,21 @@ test("message falls back to english, then to the key", () => {
   assert.equal(message("xx", "ui.risk"), "Risk");
   assert.equal(message("mr", "no.such.key"), "no.such.key");
   assert.equal(message("en", "ui.findings.many", { n: 3 }), "3 findings");
+});
+
+test("every string on the options page has a catalog key in every language", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const html = await readFile(new URL("../options.html", import.meta.url), "utf8");
+  const keys = [...html.matchAll(/data-i18n(?:-count)?="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(keys.length > 30, `found only ${keys.length} tagged strings`);
+  for (const code of availableLanguages()) {
+    for (const key of keys) {
+      assert.ok(key in LOCALES[code].messages, `${code} is missing ${key}`);
+    }
+  }
+  for (const key of keys.filter((k) => k.endsWith(".count"))) {
+    for (const code of availableLanguages()) {
+      assert.equal(LOCALES[code].messages[key].split("{n}").length, 2, `${code} ${key} needs exactly one {n}`);
+    }
+  }
 });
