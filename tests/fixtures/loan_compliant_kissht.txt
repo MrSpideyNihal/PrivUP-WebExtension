@@ -1,0 +1,37 @@
+# source: https://www.kissht.com/privacy-policy
+# retrieved: 2026-09-09
+# note: Indian digital lending app. Explicitly disclaims phone-resource access. Negation control.
+# excerpt only, real text, not the complete document
+# ---
+LOCATION
+The platform accesses the current location only once during the loan onboarding journey to verify the location of the borrower and check the availability of our services and approve the application.
+How we use this data:
+For enabling the access to Services provided on platform; For KYC compliance Requirements.
+PHONE
+The platform collects the device location of the borrower and phone number information, such as your device hardware model, operating system, and version, unique device identifiers, user profiles, WiFi information, and mobile network information only once during loan onboarding journey.
+How we use the data:
+For uniquely identifying your devices and to protect you from fraud; For preventing unauthorised devices from misrepresenting you or misusing your information; For Enabling Communications Between You and Us; For Legal Compliance and Requirements. In addition to the Information made available to us, we may seek your explicit consent and request onetime access to your SMS/Email/Location. We only read SMS/Emails from financial service providers and do not open, read, or access any personal SMS/Emails. We hereby confirm that we do not access any other personal Information on your SMS/ Email. Upon granting consent for access to your SMS, Email, and/or Location for loan onboarding and KYC purposes, we access such information only for the period necessary to complete the onboarding and KYC process. Once these requirements are fulfilled, access to such information is automatically discontinued, and we do not access or read your SMS or other permitted information thereafter. If you apply for a loan with us again in the future, we may seek your consent again to access such information as required for the new onboarding and KYC process.
+We also do not access your mobile phone resources such as contact list, call logs, telephony Functions, etc. We do not collect your biometric data.
+CAMERA
+We require one time camera access to take selfie, scan and capture the required KYC documents thereby allowing us to auto-fill relevant fields. A one-time access can be taken for camera, microphone, location or any other facility necessary for the purpose of on-boarding/KYC requirements only, with the explicit consent of the borrower.
+How we use the data:
+For enabling camera access to take selfie, scan and capture the required KYC documents thereby allowing us to auto-fill relevant fields, For KYC compliance Requirements.
+MOBILE APP
+We may collect and use technical data and related information, including but not limited to, technical information about your device, system and application software, and peripherals, that is gathered periodically to facilitate the provision of software updates, product support and other services to you (if any) related to such Mobile Applications. When you use our Mobile Application, the Mobile Application may automatically collect and store some or all of the following information from your mobile device ("Mobile Device Information", in addition to the Device Information, including without limitation based on explicit consent of this Privacy Policy:
+Browser information
+Internet Protocol (IP) address
+Operating system
+Platform type
+Information collected through cookies.
+Information collected via pixel tags and other technologies.
+Demographic information
+Time zone setting
+Log files/cookies data (implicitly includes browsing data, such as pages visited, date and time of visit, etc.)
+Non-Personal Information
+We also collect certain other information from you on your visit to our Website such as information about your operating system, browser type, the list of third- party applications being used by you, your internet service provider and your IP Address (Non- personal Information). This information cannot be easily used to personally identify you.
+We use Non-personal Information for the purposes including but not limited to troubleshoot connection problems, administer the Website, analyze trends in the market, gather demographic information, to ascertain how our visitors use our Website, including information relating to the frequency of visits to our Website, average length of visits, pages viewed during a visit, ensuring compliance with the applicable law, co-operating with law enforcement activities, etc. This information is used to improve the Website content and performance. You also agree that we may gather usage statistics and usage data from your use of our Website to evaluate your use of our products/services, to improve our products/services, Website content and to ensure that you are complying with the terms of the applicable agreements between you and OnEMI and its lending partners. The statistics and data collected may or may not be aggregated. These statistics contain no information that can distinctly identify you.
+We may in future also share this information with third party service providers or third party advertisers to measure the overall effectiveness of our online advertising, content, programming and for other bonafide purpose, as we may desire. By usage of our Website you expressly consent to OnEMI and its authorised analytics/marketing partners accessing such information solely for the specific purposes disclosed in this Policy, and not for any other purpose without your separate, explicit, opt-in consent, in accordance with the purpose limitation principle under the Digital Personal Data Protection Act, 2023.
+SESSION DATA
+We automatically log generic information about your device's connection to the Internet, which we call "session data", that is anonymous and not linked to any personal information. Session data consists of information such as the IP address, operating system, type of browser software being used by you and the activities conducted by you on our Website. An IP address is a number that lets device attached to the Internet, such as our web servers, know where to send data back to the user, such as the pages of the site the user wishes to view. We collect session data because it helps us analyze things such as the items visitors are likely to click on most, the manner in which visitors click preferences on our Website, number of visitors surfing to various pages on the Website, time spent by the visitors on our Website and frequency of their visit. It also helps us diagnose problems with our servers and lets us better administer our systems. Although such information does not identify any visitor personally, it is possible to determine from an IP address a visitor's Internet Service Provider (ISP), and the approximate geographic location of his or her point of connectivity.
+COOKIES
+If enabled, we may place cookies on your machine that store small amounts of data on your computer about your visit to any of the pages of this website. Cookies can identify the pages that are being viewed, and this can assist us in tracking which of our features appeal the most to you and what content you may have viewed on past visits.

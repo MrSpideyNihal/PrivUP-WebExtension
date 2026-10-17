@@ -135,7 +135,8 @@ export function translate(verdict, language) {
 function buildHeadline(meta, findings, catalog, msg, missing) {
   if (meta.headline === undefined || meta.headline === null) return null;
   if (meta.empty_document) return msg("headline.empty_document");
-  if (!findings.length) return msg("headline.clean");
+  // An Allow that still lists minor notes says "no red flags", not "flagged".
+  if (!findings.length || meta.notes_only) return msg("headline.clean");
 
   const topics = [];
   for (const f of findings) {

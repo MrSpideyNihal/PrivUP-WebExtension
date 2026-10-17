@@ -1,12 +1,21 @@
 /* Verdict generation. Mirror of core/scorer/scorer.py.
  *
- *   no findings          -> Allow
- *   any critical finding -> Deny
- *   anything else        -> Warning
+ *   any critical finding                -> Deny
+ *   any high finding                    -> Warning
+ *   two or more distinct medium rules   -> Warning
+ *   anything else, with or without notes -> Allow
  *
  * Nothing accumulates into a Deny. Severities are set by rule authors, and
  * escalating on volume would let a rule set with many weak rules out-vote one
  * with few precise ones.
+ *
+ * Warning used to mean "any finding at all", and every real policy has one:
+ * all of 20 checked, Signal included, came back Warning. A document with only
+ * low findings or a single medium one is now an Allow that still lists them as
+ * notes. The medium count is of distinct rules, never of repeats.
+ *
+ * The risk score counts each rule once, at its worst match. It used to add
+ * every matching sentence, so it measured the length of a policy.
  */
 
 import { Decision, Severity, severityRank, verdict, worstSeverity } from "./models.js";
@@ -21,6 +30,15 @@ export const SEVERITY_WEIGHTS = {
 
 export const DENY_AT = Severity.CRITICAL;
 
+// Any finding at this severity or above makes a verdict at least a Warning.
+export const WARN_AT = Severity.HIGH;
+
+// How many distinct medium rules together make a Warning. One medium rule is
+// a note; several, from different rules, are a pattern.
+export const WARN_AT_MEDIUM_RULES = 2;
+
+export const CLEAN_HEADLINE = "No red flags detected in this policy.";
+
 // Worst first, then document order, so the reason a user reads first is the
 // reason that matters most.
 function compareFindings(a, b) {
@@ -29,12 +47,26 @@ function compareFindings(a, b) {
   return a.clause.index - b.clause.index;
 }
 
+// One contribution per rule, at its worst match. Repeats of the same rule are
+// one fact, however many sentences repeat it.
 function riskScore(findings) {
-  const total = findings.reduce(
-    (sum, f) => sum + SEVERITY_WEIGHTS[f.severity] * f.confidence,
-    0
-  );
+  const worst = new Map();
+  for (const f of findings) {
+    const weight = SEVERITY_WEIGHTS[f.severity] * f.confidence;
+    if (weight > (worst.get(f.ruleId) || 0)) worst.set(f.ruleId, weight);
+  }
+  let total = 0;
+  for (const weight of worst.values()) total += weight;
   return Math.round(Math.min(100.0, total) * 10) / 10;
+}
+
+function decide(ordered, worst) {
+  if (severityRank(worst) >= severityRank(DENY_AT)) return Decision.DENY;
+  if (severityRank(worst) >= severityRank(WARN_AT)) return Decision.WARNING;
+  const mediumRules = new Set(
+    ordered.filter((f) => f.severity === Severity.MEDIUM).map((f) => f.ruleId)
+  );
+  return mediumRules.size >= WARN_AT_MEDIUM_RULES ? Decision.WARNING : Decision.ALLOW;
 }
 
 const RULE_LABELS = {
@@ -140,12 +172,12 @@ export function score(findings, { ruleSet, origin, clausesAnalyzed = 0 }) {
       findings: [],
       riskScore: 0.0,
       clausesAnalyzed,
-      metadata: { severity_counts: {}, categories: [], headline: "No red flags detected in this policy." },
+      metadata: { severity_counts: {}, categories: [], headline: CLEAN_HEADLINE },
     });
   }
 
   const worst = worstSeverity(ordered.map((f) => f.severity));
-  const decision = severityRank(worst) >= severityRank(DENY_AT) ? Decision.DENY : Decision.WARNING;
+  const decision = decide(ordered, worst);
 
   // Two rules can reach the same conclusion. The user does not need telling
   // twice, but the findings behind both are kept so the evidence remains.
@@ -161,6 +193,17 @@ export function score(findings, { ruleSet, origin, clausesAnalyzed = 0 }) {
   const counts = {};
   for (const f of ordered) counts[f.severity] = (counts[f.severity] || 0) + 1;
 
+  // An Allow that still has findings carries minor notes, not red flags, so
+  // its headline says so rather than naming them as flagged.
+  const notesOnly = decision === Decision.ALLOW;
+  const metadata = {
+    severity_counts: counts,
+    worst_severity: worst,
+    categories: [...new Set(ordered.map((f) => f.category))].sort(),
+    headline: notesOnly ? CLEAN_HEADLINE : generateHeadline(ordered),
+  };
+  if (notesOnly) metadata.notes_only = true;
+
   return verdict({
     decision,
     ruleSet,
@@ -169,11 +212,6 @@ export function score(findings, { ruleSet, origin, clausesAnalyzed = 0 }) {
     findings: ordered,
     riskScore: riskScore(ordered),
     clausesAnalyzed,
-    metadata: {
-      severity_counts: counts,
-      worst_severity: worst,
-      categories: [...new Set(ordered.map((f) => f.category))].sort(),
-      headline: generateHeadline(ordered),
-    },
+    metadata,
   });
 }

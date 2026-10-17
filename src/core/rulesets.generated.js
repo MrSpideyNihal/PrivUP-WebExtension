@@ -1,14 +1,7 @@
 /* GENERATED FILE - DO NOT EDIT.
  *
- * Mirror of core/tags/rulesets/*.json, which is the single definition of a
- * rule anywhere in this repo. Regenerate with:
- *
- *     python tools/sync_rulesets.py
- *
- * A test runs `--check` and fails if this file is out of date, so the
- * extension cannot quietly disagree with the CLI about what a policy says.
- *
- * To add or change a rule, edit the JSON. Never edit this file.
+ * Mirror of core/tags/rulesets/*.json from the public Privup repo.
+ * Regenerated automatically by .github/workflows/sync-rules.yml.
  */
 
 export const RULE_SETS = {
@@ -26,9 +19,12 @@ export const RULE_SETS = {
         "negations": [
           "\\b(?:do|does|shall|will|would) not (?:retain|keep|store|hold)\\b",
           "\\bnever (?:retain|keep|store)\\b",
-          "['’ʼ]t\\b"
+          "['’ʼ]t\\b",
+          "\\bnon-?personal\\b",
+          "\\banonymi[sz]ed\\b",
+          "\\baggregate(?:d)?\\b"
         ],
-        "note": "Storage limitation requires data to be kept no longer than necessary for the stated purpose. 'Indefinitely' and 'perpetual' are the explicit failures of that principle.",
+        "note": "Storage limitation requires data to be kept no longer than necessary for the stated purpose. 'Indefinitely' and 'perpetual' are the explicit failures of that principle. Wikimedia's 'Non-Personal Information may be retained indefinitely' was flagged; non-personal, anonymised and aggregate data are excluded.",
         "patterns": [
           "\\bindefinite(?:ly)?\\b",
           "\\bperpetu(?:al|ity)\\b",
@@ -74,13 +70,15 @@ export const RULE_SETS = {
           "\\bnever\\b",
           "\\bwe don'?t\\b",
           "\\bno(?:t)? (?:sell|rent|lease|trade)\\b",
-          "['’ʼ]t\\b"
+          "['’ʼ]t\\b",
+          "\\bnot to (?:sell|rent|lease|trade)\\b",
+          "\\bno (?:personal |user )?(?:data|information)\\b[^.]{0,30}\\b(?:is|are|will be) (?:ever )?(?:sold|rented|traded)\\b"
         ],
-        "note": "The negation list matters more than the patterns here. Most policies mention selling data specifically in order to promise they do not: Fibe's live policy reads 'We do not sell, rent, lease your Personal Information to anybody and will never do so.'",
+        "note": "The negation list matters more than the patterns here. Most policies mention selling data specifically in order to promise they do not: Fibe's live policy reads 'We do not sell, rent, lease your Personal Information to anybody and will never do so.' Paytm's 'Not to sell your Personal Data to any third party' was flagged as a sale until 'not to sell' was a negation. Microsoft's 'Data brokers from which we purchase demographic data' described buying data and was flagged as a sale; a broker now only counts next to a selling or sharing verb.",
         "patterns": [
           "\\bsell\\w*\\b[^.]{0,40}\\b(?:personal (?:data|information)|your (?:data|information))\\b",
           "\\b(?:rent|lease|trade|monetis|monetiz)\\w*\\b[^.]{0,40}\\b(?:personal (?:data|information)|your (?:data|information))\\b",
-          "\\bdata brokers?\\b"
+          "\\b(?:sell|sold|rent|lease|share|provide|disclose)\\w*\\b[^.]{0,60}\\bdata brokers?\\b"
         ],
         "reason": "This service sells or rents your personal information to other companies.",
         "reference": "GDPR Art. 6, lawful basis; Art. 13(1)(e), recipients",
@@ -88,6 +86,16 @@ export const RULE_SETS = {
       },
       {
         "category": "third_party_sharing",
+        "hedge_reason": "Your information is passed to companies that work for this service, such as payment processors or hosting providers.",
+        "hedge_severity": "low",
+        "hedges": [
+          "\\bservice providers?\\b",
+          "\\b(?:data )?processors?\\b",
+          "\\bvendors?\\b",
+          "\\bon (?:our|its|their) behalf\\b",
+          "\\bto (?:help us )?(?:provide|operate|deliver|run) (?:some of )?(?:our|the) (?:services?|products?)\\b",
+          "\\bprocess\\w* (?:credit card|card|payment)\\w*\\b|\\bpayment (?:processors?|gateways?)\\b"
+        ],
         "id": "gdpr.sharing.third_party",
         "negations": [
           "\\b(?:do|does|shall|will|would) not (?:share|disclose|sell|transfer|provide|give|make available|grant)\\b",
@@ -96,9 +104,13 @@ export const RULE_SETS = {
           "\\bcourt order\\b",
           "\\blaw enforcement\\b",
           "\\blegal obligation\\b",
-          "['’ʼ]t\\b"
+          "['’ʼ]t\\b",
+          "\\bno (?:user |personal |customer )?(?:data|information)\\b[^.]{0,30}\\b(?:is|are|will be) (?:ever )?(?:shared|disclosed|sold|transferred)\\b",
+          "\\bnot to (?:share|sell|disclose)\\b",
+          "\\bdoes not apply to\\b",
+          "\\?\\s*$"
         ],
-        "note": "Sharing is normal and often necessary; the reason line says what happens rather than accusing anyone. Legal-obligation disclosures are negated out because a policy cannot promise not to answer a court order. The verb list was too narrow. 'We work with third-party service providers' and 'We may receive information from advertisers and other data partners' are both disclosures a reader wants, and neither used a verb we matched.",
+        "note": "Sharing is normal and often necessary; the reason line says what happens rather than accusing anyone. Legal-obligation disclosures are negated out because a policy cannot promise not to answer a court order. The verb list was too narrow. 'We work with third-party service providers' and 'We may receive information from advertisers and other data partners' are both disclosures a reader wants, and neither used a verb we matched. Fired on every one of 20 real policies, including Signal and Proton, so it carried no information. Proton's 'No user data is ever shared with third parties' was flagged until that form was a negation, and Groww's scope sentence 'This Privacy Policy does not apply to information ... collected by any third-party' likewise. Sharing with processors acting for the service is now low; sharing with advertisers is caught by gdpr.tracking.targeted_ads. A clause that is a question (a section heading such as 'DOES PAYTM SHARE PERSONAL DATA WITH THIRD PARTIES?') states nothing and is ignored.",
         "patterns": [
           "\\b(?:share|disclose|transfer|provide|sell|make available)\\w*\\b[^.]{0,60}\\b(?:third part|partner|affiliate|advertiser|vendor|service provider)\\w*\\b",
           "\\bthird[- ]part(?:y|ies)\\b[^.]{0,60}\\b(?:access|receive|obtain)\\w*\\b",
@@ -169,15 +181,19 @@ export const RULE_SETS = {
           "\\bnever\\b",
           "\\bwe don'?t\\b",
           "\\bno (?:targeted )?(?:ads|advertising)\\b",
-          "['’ʼ]t\\b"
+          "['’ʼ]t\\b",
+          "\\b(?:committed|agreed|promised) to not\\b",
+          "\\bto not (?:associate|use|share|target|track|store)\\b",
+          "\\bnot to (?:associate|use|share|target|track|personali[sz]e)\\b"
         ],
-        "note": "Art. 21(2) gives an unconditional right to object. Worth surfacing precisely because the opt-out usually exists but is buried.",
+        "note": "Art. 21(2) gives an unconditional right to object. Worth surfacing precisely because the opt-out usually exists but is buried. DuckDuckGo's 'Microsoft has committed to not associate your ad-click behavior with a user profile' was flagged until 'committed to not' was a negation. Sharing with advertisers moved here from third_party, which now treats processors as low.",
         "patterns": [
           "\\btargeted (?:advertis|market|ad)\\w*\\b",
           "\\b(?:interest|behaviou?r)[- ]based (?:advertis|ad)\\w*\\b",
           "\\bpersonalis(?:e|ed|ing) (?:ads?|advertis)\\w*\\b",
           "\\bpersonaliz(?:e|ed|ing) (?:ads?|advertis)\\w*\\b",
-          "\\bad(?:vertising)? (?:network|partner)s?\\b"
+          "\\bad(?:vertising)? (?:network|partner)s?\\b",
+          "\\b(?:share|disclose|provide|sell)\\w*\\b[^.]{0,60}\\badvertis(?:ers?|ing (?:partners?|companies|networks?))\\b"
         ],
         "reason": "Your data is used to target advertising at you.",
         "reference": "GDPR Art. 21(2), the right to object to direct marketing",
@@ -209,7 +225,7 @@ export const RULE_SETS = {
       {
         "category": "consent",
         "id": "gdpr.consent.bundled",
-        "note": "Consent by continued use is not consent under Art. 4(11). Live example: Fibe's policy reads 'By using the Application, you signify your consent to our use of cookies.'",
+        "note": "Consent by continued use is not consent under Art. 4(11). Live example: Fibe's policy reads 'By using the Application, you signify your consent to our use of cookies.' Low rather than medium in the generic set: it is the standard opening of nearly every policy. rbi.consent.bundled stays high for lenders, where explicit consent is required.",
         "patterns": [
           "\\bby (?:using|accessing|continuing to use|downloading|installing|mere use)\\b[^.]{0,90}\\b(?:you (?:agree|consent|accept|acknowledge|indicate|understand)|signif\\w+ your consent)\\b",
           "\\bcontinued use\\b[^.]{0,60}\\b(?:constitutes?|signifies|means)\\b",
@@ -218,16 +234,15 @@ export const RULE_SETS = {
         ],
         "reason": "Simply using the service is treated as your agreement. You are not actually being asked.",
         "reference": "GDPR Art. 4(11), consent must be freely given and unambiguous",
-        "severity": "medium"
+        "severity": "low"
       },
       {
         "category": "unilateral_change",
         "id": "gdpr.change.unilateral",
-        "note": "Live example: Kissht's terms read 'We reserve the right to update or modify the Terms of Use at any time, without prior notice, at our sole discretion.' Terms you agreed to once are not the terms you are held to later.",
+        "note": "Live example: Kissht's terms read 'We reserve the right to update or modify the Terms of Use at any time, without prior notice, at our sole discretion.' Terms you agreed to once are not the terms you are held to later. No longer matches a bare 'at any time' or 'reserve the right to change', which nearly every policy says; the reason is about changes made without telling the user, and that is what is matched.",
         "patterns": [
-          "\\b(?:modify|change|amend|update|revise)\\w*\\b[^.]{0,80}\\b(?:without (?:prior )?notice|at any time|sole discretion)\\b",
-          "\\bwithout (?:prior )?notice\\b[^.]{0,60}\\b(?:modify|change|amend|update)\\w*\\b",
-          "\\breserve the right to (?:modify|change|amend|update|revise)\\b"
+          "\\b(?:modify|change|amend|update|revise)\\w*\\b[^.]{0,80}\\b(?:without (?:prior |any |further )?(?:notice|notification|informing)|(?:in|at) (?:its|our) sole discretion)\\b",
+          "\\bwithout (?:prior |any |further )?notice\\b[^.]{0,60}\\b(?:modify|change|amend|update)\\w*\\b"
         ],
         "reason": "The company can change these terms whenever it likes, without telling you first.",
         "reference": "GDPR Art. 12(1), transparency of changes",
@@ -244,7 +259,7 @@ export const RULE_SETS = {
           "\\bnever transfer\\b",
           "['’ʼ]t\\b"
         ],
-        "note": "Not wrong in itself, and Chapter V exists to make it lawful. Reported so a user knows which legal system is actually protecting their data.",
+        "note": "Not wrong in itself, and Chapter V exists to make it lawful. Reported so a user knows which legal system is actually protecting their data. Low rather than medium: almost every service hosts abroad, and safeguards such as Standard Contractual Clauses were being reported as risks.",
         "patterns": [
           "\\btransfer\\w*\\b[^.]{0,60}\\b(?:outside|other countr|another countr|abroad|overseas)\\w*\\b",
           "\\bservers? (?:located|hosted|based) (?:in|outside)\\b",
@@ -253,7 +268,7 @@ export const RULE_SETS = {
         ],
         "reason": "Your data is sent to servers in other countries, where different privacy laws apply.",
         "reference": "GDPR Chapter V, transfers to third countries",
-        "severity": "medium"
+        "severity": "low"
       },
       {
         "category": "security",
@@ -271,7 +286,7 @@ export const RULE_SETS = {
       {
         "category": "consent",
         "id": "gdpr.optout.absent",
-        "note": "Absence is the finding, so this rule is document-scoped: no individual clause is wrong, the document as a whole is missing something a reader needs. Art. 7(3) requires withdrawing consent to be as easy as giving it, which is impossible if the policy never says how.",
+        "note": "Absence is the finding, so this rule is document-scoped: no individual clause is wrong, the document as a whole is missing something a reader needs. Art. 7(3) requires withdrawing consent to be as easy as giving it, which is impossible if the policy never says how. Medium rather than high in the generic set: a minimal-collection service such as Signal has little to opt out of, and a legal page that links to a separate privacy centre was getting an alarming finding. Lenders keep rbi.consent.no_withdrawal at high.",
         "patterns": [
           "\\bopt[- ]?out\\b",
           "\\bopt[- ]?in\\b",
@@ -286,7 +301,7 @@ export const RULE_SETS = {
         "reason": "This policy never explains how to opt out, withdraw consent, or delete your data. There is no stated way to say no.",
         "reference": "GDPR Art. 7(3), the right to withdraw consent; Art. 17, erasure",
         "scope": "document_absent",
-        "severity": "high"
+        "severity": "medium"
       }
     ]
   },

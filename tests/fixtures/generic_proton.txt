@@ -1,0 +1,54 @@
+# source: https://proton.me/legal/privacy
+# retrieved: 2026-10-17
+# note: Privacy-focused provider. Should be Allow. Includes 'No user data is ever shared with third parties', which was once flagged as sharing.
+# excerpt only, real text, not the complete document
+# ---
+Last modified: 12th May 2026
+
+At Proton, we strongly believe in an internet where privacy is the default.
+
+Proton’s Privacy Policy describes how Proton collects, uses, and deletes your data.
+
+In addition to this Privacy Policy, we provide data and privacy information specific to our products that use your personal data.
+
+This product-specific information can be found in the following privacy policies :
+
+Proton Mail Privacy Policy
+
+Proton Drive Privacy Policy
+
+Proton Calendar Privacy Policy
+
+Proton VPN Privacy Policy(new window)
+
+Proton Pass Privacy Policy
+
+Proton Wallet Privacy Policy
+
+Proton Meet Privacy Policy
+
+Lumo Privacy Policy
+
+Proton Business Privacy Policy
+
+By using the proton.me or protonvpn.com website and making use of a Proton Account (the “Account”) and all its related features, including Proton Mail, Proton Calendar, Proton Drive, Proton VPN and Proton Pass (the “Services”) and other services like Proton Wallet operated by Proton Financial AG, you understand that your data in relation with your use of our Services is processed according to the following Privacy Policy and its product-specific privacy policies (together, the "Privacy Policy").
+
+The Privacy Policy states (i) what data we collect through your access and uses of the Services; (ii) the use we make of such data; and (iii) the safeguards put in place to protect your data.
+
+The Privacy Policy is to be read and understood as being a complement to our Terms of Service.
+
+The Services are operated by Proton AG (the “Company”, “We”), domiciled at Route de la Galaise 32, 1228 Plan-les-Ouates, Geneva, Switzerland.
+
+We may also rely on third parties, such as Zendesk or Calendly (see below).
+
+We rely on third parties to process credit card, PayPal, and Bitcoin transactions and must therefore share payment information with them.
+
+Any information, communication, or material you submit to us via social media platforms is done at your own risk without any guarantee of privacy.
+
+Guarantees for international transfer: Standard Contractual Clauses, Binding Corporate Rules, Certifications
+
+Guarantees for international transfer: Standard Contractual Clauses, Data Processing Agreement
+
+Continued use of the Services after such changes are performed shall constitute your consent to it.
+
+The legal basis of this processing is consent, and you are free to opt in or opt out of that processing at any time in the security panel of your Account.

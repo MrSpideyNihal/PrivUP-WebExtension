@@ -1,0 +1,48 @@
+# source: https://duckduckgo.com/privacy
+# retrieved: 2026-10-17
+# note: Privacy-focused search engine. Should be Allow: every finding is a note.
+# excerpt only, real text, not the complete document
+# ---
+DuckDuckGo (officially, Duck Duck Go, Inc.) has been an independent company since our founding in 2008. While we started as a search engine, our apps and extensions now offer protection well beyond search, including when browsing the web, reading email, using chatbots, and even using other apps.
+
+Trackers lurk nearly everywhere online, trying to scoop up your search history, browsing history, location history, and more.
+
+Even everyday online activities like purchasing groceries or looking up the local weather can result in dozens of companies tracking you.
+
+Other companies track your data — like your search, chat, and browsing history — to create detailed profiles about you, and then use those profiles to follow you around with ads so creepy it can seem like your devices are listening in on you (even when they aren’t).
+
+These profiles are also used by companies to influence what you see online, which can lead to manipulation and discrimination.
+
+That’s why we offer an all-in-one privacy product as a privacy preserving alternative to products like Google Search, Google Gemini, and Google Chrome, to help protect your everyday online activities.
+
+When you visit our search engine or our other websites, your device sends some information about itself automatically, like its IP address, browser type, and language, and may send additional information upon request like its screen size, operating system, and preferences.
+
+However, we only use this information temporarily to deliver content to you and, for security, to ensure you’re not a malicious bot.
+
+Similarly, we may also anonymously use information we receive from you when using our products and features, such as click timing in Email Protection, for security, and to protect against fraud and abuse.
+
+We don’t save your IP address alongside your searches, Duck.ai chats, or visits to our websites, and we never log IP addresses to disk that could be tied back to you.
+
+We also don’t save any other unique identifiers alongside your searches, chats, or visits to our website, and never log unique identifiers to disk that could be tied back to you or to your search, chat, or browsing history.
+
+If you enable optional features (more on those below), such as storing chats in encrypted form on our servers with Sync & Backup, we may use random IDs so those features can work, but the master decryption key exists only on your synced devices, meaning DuckDuckGo cannot decrypt and read your chats in any case.
+
+This means that when you use our services, we have no way to create a history of your search queries, your chats, or the sites you browse.
+
+For example, we may know that we got a lot of searches for "cute cat pictures" today, but we don’t know who actually performed those searches.
+
+That is, viewing search results on DuckDuckGo is anonymous.
+
+And we only save these anonymous search queries — completely disconnected from any unique identifiers like IP addresses — to improve our search indexes by analyzing anonymous search trends, so that we can better serve you.
+
+For local search results in particular, we've further engineered a solution to shield your precise location from us and our content providers that sends us a random location nearish to you, which we also never log to disk.
+
+In the process of delivering and improving our search results and other content, we also prevent our hosting and content providers from creating a history of your searches, chats, and browsing.
+
+We will limit its use by only keeping it for as long as necessary for the stated purpose, and we will protect it by keeping it secure and deleting it when it is no longer required, unless a longer period is required by law.
+
+For information voluntarily provided in surveys, we sometimes use additional vendors for processing, though their access to personal information is contractually limited to what is necessary to perform their services.
+
+In such scenarios, if any cross-border transfers are necessary, we will follow applicable legal requirements.
+
+Before you choose to use an optional feature, we always let you know what personal information we’ll need (if any), how we’ll use it, and how you can subsequently opt out.

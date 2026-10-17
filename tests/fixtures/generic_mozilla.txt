@@ -1,0 +1,51 @@
+# source: https://www.mozilla.org/en-US/privacy/firefox/
+# retrieved: 2026-09-09
+# note: GDPR-shaped notice from a privacy-forward vendor. Retention and sharing language.
+# excerpt only, real text, not the complete document
+# ---
+To comply with applicable laws, and identify and prevent harmful, unauthorized or illegal activity
+We may also be required to process your personal data to comply with applicable laws and protection purposes, such as:
+Responding to lawful requests and complying with legal processes, such as responding to subpoenas, investigations, or requests from government authorities. Mozilla requires a valid Legal Process to compel the disclosure of specific user data to a government.
+Responding to requests to exercise privacy rights, such as your right to access or delete your personal data.
+Identifying, investigating and addressing potential fraudulent activities, or other harmful activities such as illegal activities, cyberattacks or intellectual property infringement (including filing or defending legal claims).
+Performing internal compliance and security activities, such as audits and enterprise security management.
+How we share your personal data
+To provide our services as described above, we may disclose personal data to:
+Partners, service providers, suppliers and contractors | To perform the purposes listed above, we work with partners, service providers, suppliers and contractors. We have contractual protections in place, so that the entities receiving personal data are contractually obligated to handle the data in accordance with Mozilla’s instructions. Learn more.
+Authorities | Mozilla requires a valid Legal Process to compel the disclosure of specific user data to a government. In those instances we may need to disclose the personal data set out in this Notice to law enforcement, government authorities, or similar entities to comply with applicable laws, and to identify and prevent harmful, unauthorized or illegal activity.
+Researchers | When we are fulfilling our mission of being open. We sometimes release information to make our products better and foster an open web, but when we do, we will do so in a de-identified and/or aggregated format.
+Mozilla controlled entities and successors | As a global company, we share data across Mozilla-controlled affiliates and subsidiaries. We may also need to disclose personal data as part of a corporate transaction, such as a merger, acquisition, sale of assets or similar transaction.
+International transfers of data
+Mozilla (and our servers) are based in the United States. Because we are a global company, in order to provide the services outlined in this Privacy Notice, the information we collect may be accessed from locations where our people are located and data may also be transferred to other jurisdictions as a result of sharing data with our partners. Where applicable, we ensure we have appropriate mechanisms in place (such as standard contractual clauses approved by the European Commission and other relevant authorities) to protect your personal data. You can contact dpo@mozilla.com for information on the safeguards implemented for international transfers, or for copies of the relevant standard contractual clauses.
+How long we keep your data
+We only retain your personal data for as long as necessary to fulfill the purposes outlined in this Privacy Notice. In general, we do not retain personal data for more than 25 months, but actual retention periods may vary depending on the type of data and the purpose(s) for which it was collected (for example, we retain your “first seen” date for the period of your use of Firefox, so we know how long you’ve been a Firefox user). Specific retention periods may also depend on the sensitivity of the data, the context of its collection, your settings and preferences, and our legal or contractual obligations to retain or delete your data, such as for fraud prevention, regulatory compliance, or service continuity. Once the retention period expires we securely delete your data, unless otherwise required by law.
+Our services also use encrypted backup storage as another layer of protection to help recover from potential disasters; data in these environments is put beyond use and only processed for business continuity purposes. We may also retain data for extended periods of time on a de-identified or aggregated basis.
+Your rights and choices
+Your rights
+As a Firefox user, you have the right to:
+Be informed about what data we process about you, why and who it’s shared with (that’s this Notice!)
+Request a copy of the data we have about you
+Request portability of your data
+Request correction of any data we hold about you that is inaccurate or incomplete
+Have personal data we hold about you deleted (in certain circumstances)
+In some cases, restrict or object to how we use your personal data
+Complain to your relevant data protection authority if you have concerns about how we’re handling your personal data. We’d prefer it if you contact us first (via dpo@mozilla.com), but you can also reach out to your relevant EU data protection authority, or search for (and contact) your local data protection authority
+To make any of the above requests regarding your personal data, please contact us (Mozilla Corporation) through our Data Subject Access Request Portal; we will never discriminate against anyone for exercising their privacy rights. If you have any other questions regarding personal data or our privacy practices, please contact us at compliance@mozilla.com.
+If you’re in the UK or EEA, you can also contact our Data Protection Officer at dpo@mozilla.com, or by mail at:
+Bird & Bird DPO Services SRL Avenue Louise 235 b 1 1050 Brussels Belgium
+We respond to all requests we receive from individuals wishing to exercise their data protection rights in accordance with applicable data protection laws, and we may need to ask you for additional information to confirm your identity before we can proceed with your request.
+Please note that, when you request deletion of your Firefox data, it will be deleted within 30 days of the request (with the exception of Interaction Data, which has a standard retention period of 90 days and is automatically deleted at the end of this period).
+Your choices
+You can update your data collection settings for Desktop and Mobile at any time.
+Firefox also provides Global Privacy Control (GPC), which you can enable to automatically notify websites not to sell or share information about your browsing session on that website. GPC operates as a “Do Not Sell” mechanism in some US states such as California, Colorado and Connecticut. It may also be used to indicate an opt-out of targeted advertising or general request to limit the sale or sharing of your personal data in those jurisdictions, as well as in jurisdictions such as the EU, UK, Nevada, Utah and Virginia.
+Applicability (Firefox version)
+This Privacy Notice is for the most recent general release version of Firefox distributed by Mozilla. If you obtain Firefox elsewhere, or are running an older version, your copy of Firefox may contain different privacy characteristics.
+Mozilla’s pre-release versions of Firefox (which are distributed through channels such as Nightly, Beta, Developer Edition and TestFlight) are development platforms frequently updated with experimental features and studies. In addition to the data collection described in this Privacy Notice, these versions by default may send certain types of web activity and crash data to Mozilla (and in some cases to our partners).
+Changes
+We may need to change this policy and our notices, in which case the updates will be posted online and we will update the effective date of this notice. If the changes are substantive, we will also announce the update more prominently through Mozilla’s usual channels for such announcements, such as blog posts and forums.
+Data definitions
+Data Type | Description | Examples for Firefox users
+Technical data | This is information about the hardware you are accessing our services from (such as your desktop computer, smartphone or tablet), its configurations and its connection to Firefox. | Device type, operating system, IP address, ISP (Internet Service Provider).
+Settings | These are your preferences or settings as to how the services are provided, such as your privacy preferences or toolbar settings. If you have not made any specific choices, these will be the default settings. | Enhanced Tracking Protection settings, cookie settings, permissions (location, camera, microphone), toolbar customization.
+Location | We infer your location from your IP address at the level of your country, city, or region. | Country code, city.
+Precise location | Your precise location (within a few feet or meters) | Precise location.
