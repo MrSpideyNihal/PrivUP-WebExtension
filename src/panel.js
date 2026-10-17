@@ -39,12 +39,14 @@ const DECISION_TONES = {
   deny: "#E1573A",
 };
 
-function decisionShape(decision) {
+function decisionShape(decision, hasNotes = false) {
   const key = DECISION_TONES[decision] ? decision : "warning";
+  // An Allow that still lists notes must not say nothing matched.
+  const lineKey = key === "allow" && hasNotes ? "decision.allow.notes.line" : `decision.${key}.line`;
   return {
     tone: DECISION_TONES[key],
     kicker: t(`decision.${key}`),
-    line: t(`decision.${key}.line`),
+    line: t(lineKey),
   };
 }
 
@@ -348,7 +350,7 @@ export function renderPanel({
     : meta.fetch_failed ? "fetch_failed"
     : meta.empty_document ? "empty_document"
     : null;
-  const shape = unreadableKey ? unreadableShape(unreadableKey) : decisionShape(verdict.decision);
+  const shape = unreadableKey ? unreadableShape(unreadableKey) : decisionShape(verdict.decision, verdict.findings.length > 0);
   const score = Math.min(Number(verdict.riskScore) || 0, 100);
   const headline = (!unreadableKey && meta.headline) ? meta.headline : shape.line;
 
@@ -526,6 +528,12 @@ export function renderPanel({
 
   const notice = verdict.metadata?.relevance?.notice;
   if (notice) body.append(element("p", "notice", notice));
+
+  // An Allow that still lists notes: say so, so the findings below are not
+  // mistaken for red flags.
+  if (verdict.metadata?.notes_only) {
+    body.append(element("p", "status", t("decision.allow.notes.line")));
+  }
 
   // Policy quotes are never translated, so say so, and say when nobody who
   // speaks the language has checked the translation yet.

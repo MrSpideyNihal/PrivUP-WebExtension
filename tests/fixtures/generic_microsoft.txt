@@ -1,0 +1,62 @@
+# source: https://www.microsoft.com/en-us/privacy/privacystatement
+# retrieved: 2026-10-17
+# note: Large advertising and AI business. Should be Warning: AI training on user data, advertising, tracking.
+# excerpt only, real text, not the complete document
+# ---
+This is the Trace Id: f5f457a7b7fba39ff62ee0b709b5e9dd
+
+Skip to main content Privacy Privacy dashboard Privacy report Privacy settings Privacy Statement Consumer Health Data Privacy Policy
+
+Last Updated: September 2026
+
+Expand All Collapse All
+
+Most Microsoft sites use cookies, small text files placed on your device which web servers utilize in the domain that placed the cookie can retrieve later.
+
+We use cookies to store your preferences and settings, help with sign-in, provide personalized ads, and analyze site operations.
+
+For more information, see the Cookies and similar technologies section of this privacy statement.
+
+Microsoft complies with the EU-U.S., UK Extension to the EU-U.S., and Swiss-U.S.
+
+Data Privacy Frameworks.
+
+To learn more, see the Storage and processing of personal data section, and visit the U.S. Department of Commerce’s Data Privacy Framework website.
+
+If you have a privacy concern, complaint, or question for the Microsoft privacy team or Data Protection Officer, please visit our privacy support and requests page and click on “Contact the Microsoft privacy team or the Microsoft Data Protection Officer” menu.
+
+For more information about contacting Microsoft, including Microsoft Ireland Operations Limited, see the How to contact us section of this privacy statement.
+
+Your privacy is important to Microsoft.
+
+This privacy statement explains the personal data we process, how we process it, and for what purposes.
+
+Microsoft offers a wide range of products, including server products used to help operate enterprises worldwide, devices customers use in their homes, software that students use at school, and services developers use to create and host new products.
+
+References to Microsoft products in this statement include Microsoft services, websites, apps, software, servers, and devices.
+
+Please read the product-specific details in this privacy statement, which provide additional relevant information.
+
+This statement applies to the interactions Microsoft has with you and the Microsoft products listed below, as well as other Microsoft products that display this statement.
+
+As part of our efforts to improve and develop our products, we may use your data to develop and train our AI models.
+
+For example, we use data, often de-identified, to better understand our customers’ computing and productivity needs, and to train and fine-tune AI models, which can shape the development of new products.
+
+Interactions with bots and skills available through Microsoft products, including bots and skills provided by third parties.
+
+For instance, you can use your fingerprint or facial recognition to sign in to your Windows device via Windows Hello (please see the Windows Hello section below for more information).
+
+Advertise and market to you, which includes sending promotional communications, personalized advertising, and presenting relevant offers.
+
+You can sync settings across devices via your Microsoft account, and many products allow you to turn off personalized features.
+
+For example, we provide your content to third parties when you tell us to do so, such as when you send an email to a friend or link accounts with another service.
+
+Microsoft retains personal data for as long as necessary to provide the products and services you use and to fulfill the transactions you request.
+
+We transfer personal data from the country of origin to other countries, including those that may not offer the same level of data protection as determined by the European Commission or your local data protection authority.
+
+Please refer to the Reasons we share personal data section for more information on Microsoft’s sharing of data, which include when we transfer data to another country.
+
+If Microsoft obtained your consent to use your personal data, you can withdraw that consent at any time.
